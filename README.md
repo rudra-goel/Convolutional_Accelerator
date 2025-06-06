@@ -9,7 +9,7 @@
 
 ---
 
-<p align="center"> This is a simulator for a convolutional neural network. The basic architecture was defined by Wang et. al in Hardware Architectures for Deep Convolutional Neural Network. I take their approach to computing the convolution layer via the Fast Convolutional Units and create an 8 stage convolution pipeline.
+<p align="left"> This is a simulator for a convolutional neural network. The basic architecture was defined by Wang et. al in Hardware Architectures for Deep Convolutional Neural Network. I take their approach to computing the convolution layer via the Fast Convolutional Units and create an 8 stage convolution pipeline.
 Target is a Xilinx FPGA Board.
     <br> 
 </p>

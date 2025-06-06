@@ -27,6 +27,51 @@ double adder(double x_0, double h_0) {
 }
 
 
+/**
+ * Functions that simulates pushing data into the shift register
+ * 
+ * Since shift registers are clocked, all data transfer happens in parallel
+ * 
+ * In this simulation, we assume that enqueueing data into the shift register is pushing data into the tail
+ * Dequeueing from the shift register is popping data from the head
+ * 
+ * Dequeing is responsible for removing data from the head and shifting the rest of the data accordingly 
+ * 
+ * @param queue Pointer to the queue_s structure representing the shift register.
+ * @param value The double value to be added to the queue.
+ */
+void enqueue(queue_s* queue, double value) {
+    //simply assign the value passed in to the tail's data
+    queue->tail->data = value;
+}
+
+/**
+ * Functiona that simulates popping data from the shift register
+ * 
+ * This function will:
+ * ---> return the value at the head of the queue
+ * ---> shift data @ middle to the head
+ * ---> shift data @ tail to the middle
+ * ---> Set the tail data to be 0.0
+ * * @param queue Pointer to the queue_s structure representing the shift register.
+ */
+double dequeue(queue_s* queue) {
+    //save value at the head
+    double value = queue->head->data;
+
+    //shift data from middle to head
+    queue->head->data = queue->middle->data;
+
+    //shift data from tail to middle
+    queue->middle->data = queue->tail->data;
+
+    //set tail data to 0.0
+    queue->tail->data = 0.0;
+    
+    return value;
+}
+
+
 
  /**
  * Function that simulates the three-parallel Fast Convolutional Unit (FCU)
@@ -38,7 +83,18 @@ double adder(double x_0, double h_0) {
  * @param inputs Pointer to the fcu_inputs_s structure containing input values.
  * @param kernel Pointer to the fcu_coefficients_s structure containing coefficients.
  */
-void three_parallel_fcu(fcu_inputs_s* inputs, fcu_coefficients_s* kernel) {
+fcu_outputs_s* three_parallel_fcu(
+                        fcu_inputs_s* inputs, 
+                        fcu_coefficients_s* kernel, 
+                        queue_s* shift_reg_1, 
+                        queue_s* shift_reg_2) {
+
+    fcu_outputs_s* outputs = (fcu_outputs_s*)malloc(sizeof(fcu_outputs_s));
+    if (outputs == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+
     double x0h0 = multiplier(inputs->x_0, kernel->h_0);
     double x1h1 = multiplier(inputs->x_1, kernel->h_1);
     double x2h2 = multiplier(inputs->x_2, kernel->h_2);
@@ -49,14 +105,29 @@ void three_parallel_fcu(fcu_inputs_s* inputs, fcu_coefficients_s* kernel) {
     double x0_plus_x1_h01 = multiplier(x0_plus_x1, kernel->h_01);
     double x1_plus_x2_h12 = multiplier(x1_plus_x2, kernel->h_12);
     double x0_plus_x1_plus_x2 = adder(x0_plus_x1, inputs->x_2);
-    //enqueue x2h2 into the shift register (3x shift register)
-
+    enqueue(shift_reg_1, x2h2); //enqueue x2h2 into the shift register (3x shift register)
+    double x0h0_minus_shift_reg_1 = adder(x0h0, (-1) * dequeue(shift_reg_1));
 
     //third layer
     double x0_plus_x1_plus_x2_h012 = multiplier(x0_plus_x1_plus_x2, kernel->h_012);
     double x0_plus_x1_h01_minus_x1h1 = adder(x0_plus_x1_h01, ((-1)*x1h1));
     double x1_plus_x2_h12_plus_x1h2 = adder(x1_plus_x2_h12, x1h1);
+    double y0 = adder(x0h0_minus_shift_reg_1, dequeue(shift_reg_2));
+
+    
+    //fourth layer
+    double x0_plus_x1_plus_x2_h012_minus_x0_plus_x1_h01_minus_x1h1  = adder(x0_plus_x1_plus_x2_h012, (-1)*x0_plus_x1_h01_minus_x1h1);
+    double y1 = adder(x0_plus_x1_h01_minus_x1h1, (-1)*x0h0_minus_shift_reg_1);
+    enqueue(shift_reg_2, x1_plus_x2_h12_plus_x1h2);
+
+    //fifth layer
+    double y2 = adder(x0_plus_x1_plus_x2_h012_minus_x0_plus_x1_h01_minus_x1h1, (-1)*x1_plus_x2_h12_plus_x1h2);
 
 
+    outputs->y_0 = y0;
+    outputs->y_1 = y1;
+    outputs->y_2 = y2;
+
+    return outputs;
 
 }

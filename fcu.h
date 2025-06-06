@@ -19,6 +19,13 @@ typedef struct {
     double h_012;
 } fcu_coefficients_s;
 
+//struct for the outputs of the FCU
+typedef struct {
+    double y_0;
+    double y_1;
+    double y_2;
+} fcu_outputs_s;
+
 /**
  * Constants for the simulation program.
  */
@@ -34,6 +41,7 @@ typedef struct {
  typedef struct {
      node* head;
      node* tail;
+     node* middle;
  } queue_s;
 
  

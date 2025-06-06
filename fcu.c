@@ -75,10 +75,12 @@ double dequeue(queue_s* queue) {
 
  /**
  * Function that simulates the three-parallel Fast Convolutional Unit (FCU)
- * This function takes inputs and coefficients, and performs the convolution of the two vectors via parallel FIR.
- *
+ * This function takes inputs and coefficients, and performs the convolution of the two vectors via parallel FIR architecture
  *
  * It is the combonatinal logic that implements the architecture of the FCU
+ * 
+ * The order of execution here is important. Because hardware runs in parallel, all value in asynchronous / combonational logic will become stable with time (in between rising clock edges)
+ *      However, in simulation / Clang, we need intermediate values to be stable before we can use them in the next layer of combinational logic, hence the order of execution is important
  *
  * @param inputs Pointer to the fcu_inputs_s structure containing input values.
  * @param kernel Pointer to the fcu_coefficients_s structure containing coefficients.

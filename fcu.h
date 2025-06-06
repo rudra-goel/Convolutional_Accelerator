@@ -39,9 +39,18 @@ typedef struct {
  } shift_reg_node_s;
 
  typedef struct {
-     node* head;
-     node* tail;
-     node* middle;
+     shift_reg_node_s* head;
+     shift_reg_node_s* tail;
+     shift_reg_node_s* middle;
  } queue_s;
 
- 
+double multiplier(double x_0, double h_0);
+double adder(double x_0, double x_1);
+void enqueue(queue_s* queue, double value);
+double dequeue(queue_s* queue);
+fcu_outputs_s* three_parallel_fcu   (
+                                    fcu_inputs_s* inputs, 
+                                    fcu_coefficients_s* kernel, 
+                                    queue_s* shift_reg_1, 
+                                    queue_s* shift_reg_2
+                                    );

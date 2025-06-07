@@ -71,6 +71,27 @@ double dequeue(queue_s* queue) {
     return value;
 }
 
+void init_shift_reg (queue_s* queue) {
+    // Initialize the shift register with three nodes
+    queue->head = (shift_reg_node_s*)malloc(sizeof(shift_reg_node_s));
+    queue->middle = (shift_reg_node_s*)malloc(sizeof(shift_reg_node_s));
+    queue->tail = (shift_reg_node_s*)malloc(sizeof(shift_reg_node_s));
+
+    if (queue->head == NULL || queue->middle == NULL || queue->tail == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Initialize the data in the nodes to 0.0
+    queue->head->data = 0.0;
+    queue->middle->data = 0.0;
+    queue->tail->data = 0.0;
+
+    // Set the next pointers to NULL
+    queue->head->next = NULL;
+    queue->middle->next = queue->head;
+    queue->tail->next = queue->middle;
+}
 
 
  /**
@@ -131,5 +152,4 @@ fcu_outputs_s* three_parallel_fcu(
     outputs->y_2 = y2;
 
     return outputs;
-
 }

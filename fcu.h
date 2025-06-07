@@ -54,3 +54,5 @@ fcu_outputs_s* three_parallel_fcu   (
                                     queue_s* shift_reg_1, 
                                     queue_s* shift_reg_2
                                     );
+
+void init_shift_reg(queue_s* queue);

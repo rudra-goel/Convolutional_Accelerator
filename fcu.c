@@ -1,7 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
+
 
 #include "fcu.h"
+
 
 /**
  * Multiplier function that takes two double values and returns their product.
@@ -11,7 +14,12 @@
  * @return The product of x_0 and h_0.
  */
 double multiplier(double x_0, double h_0) {
-    return x_0 * h_0;
+    double res = x_0 * h_0;
+    if (isnan(res)) {
+        fprintf(stderr, "Multiplication resulted in NaN\n\t x_0: %f\n\t h_0: %f\n", x_0, h_0);
+        exit(EXIT_FAILURE);
+    }
+    return res;
 }
 
 
@@ -23,7 +31,13 @@ double multiplier(double x_0, double h_0) {
  * @return The sum of x_0 and h_0.
  */
 double adder(double x_0, double h_0) {
-    return x_0 + h_0;
+    double res = x_0 + h_0;
+    if (isnan(res)) {
+        fprintf(stderr, "Addition resulted in NaN\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return res;
 }
 
 
@@ -43,6 +57,13 @@ double adder(double x_0, double h_0) {
 void enqueue(queue_s* queue, double value) {
     //simply assign the value passed in to the tail's data
     queue->tail->data = value;
+
+    
+
+    if (DEBUG_SHIFT_REGISTER) {
+        printf("Enqueuing value: %f\n", value);
+        print_shift_reg(queue);
+    }
 }
 
 /**
@@ -68,12 +89,21 @@ double dequeue(queue_s* queue) {
     //set tail data to 0.0
     queue->tail->data = 0.0;
     
+    if (DEBUG_SHIFT_REGISTER) {
+        printf("Dequeued value: %f\n", value);
+        print_shift_reg(queue);
+    }
+    
+    if (isnan(value)) {
+        fprintf(stderr, "Dequeue resulted in NaN\n");
+        exit(EXIT_FAILURE);
+    }
     return value;
 }
 
 //accepts a pointer to a pointer to a queue_s structure
 // This function initializes a shift register with three nodes (head, middle, tail).
-void init_shift_reg (queue_s** queue) {
+void init_shift_reg (queue_s** queue, char name) {
     // Allocate memory for the queue structure
     *queue = (queue_s*)malloc(sizeof(queue_s));
 
@@ -81,6 +111,7 @@ void init_shift_reg (queue_s** queue) {
     (*queue)->head = (shift_reg_node_s*)malloc(sizeof(shift_reg_node_s));
     (*queue)->middle = (shift_reg_node_s*)malloc(sizeof(shift_reg_node_s));
     (*queue)->tail = (shift_reg_node_s*)malloc(sizeof(shift_reg_node_s));
+    (*queue)->name = name;
 
     if ((*queue)->head == NULL || (*queue)->middle == NULL || (*queue)->tail == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
@@ -96,6 +127,12 @@ void init_shift_reg (queue_s** queue) {
     (*queue)->head->next = NULL;
     (*queue)->middle->next = (*queue)->head;
     (*queue)->tail->next = (*queue)->middle;
+
+    if (DEBUG_SHIFT_REGISTER) {
+        printf("Shift register initialized with three nodes.\n");
+        print_shift_reg(*queue);
+    }
+
 }
 
 
@@ -123,18 +160,20 @@ fcu_outputs_s* three_parallel_fcu(
         exit(EXIT_FAILURE);
     }
 
-    double x0h0 = multiplier(inputs->x_0, kernel->h_0);
-    double x1h1 = multiplier(inputs->x_1, kernel->h_1);
-    double x2h2 = multiplier(inputs->x_2, kernel->h_2);
-    double x0_plus_x1 = adder(inputs->x_0, inputs->x_1);
-    double x1_plus_x2 = adder(inputs->x_1, inputs->x_2);
+    double x0h0 = multiplier(*inputs->x_0, kernel->h_0);
+    double x1h1 = multiplier(*inputs->x_1, kernel->h_1);
+    double x2h2 = multiplier(*inputs->x_2, kernel->h_2);
+    double x0_plus_x1 = adder(*inputs->x_0, *inputs->x_1);
+    double x1_plus_x2 = adder(*inputs->x_1, *inputs->x_2);
 
     //second layer of combinational logic
     double x0_plus_x1_h01 = multiplier(x0_plus_x1, kernel->h_01);
     double x1_plus_x2_h12 = multiplier(x1_plus_x2, kernel->h_12);
-    double x0_plus_x1_plus_x2 = adder(x0_plus_x1, inputs->x_2);
-    enqueue(shift_reg_1, x2h2); //enqueue x2h2 into the shift register (3x shift register)
+    double x0_plus_x1_plus_x2 = adder(x0_plus_x1, *inputs->x_2);
     double x0h0_minus_shift_reg_1 = adder(x0h0, (-1) * dequeue(shift_reg_1));
+    //need to do this after dequeueing from shift_reg_1
+    //in hw, the SR would accept the value on the same clk edge that we dequeue from it
+    enqueue(shift_reg_1, x2h2); //enqueue x2h2 into the shift register (3x shift register)
 
     //third layer
     double x0_plus_x1_plus_x2_h012 = multiplier(x0_plus_x1_plus_x2, kernel->h_012);

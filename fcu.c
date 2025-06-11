@@ -160,35 +160,37 @@ fcu_outputs_s* three_parallel_fcu(
         exit(EXIT_FAILURE);
     }
 
-    double x0h0 = multiplier(*inputs->x_0, kernel->h_0);
-    double x1h1 = multiplier(*inputs->x_1, kernel->h_1);
-    double x2h2 = multiplier(*inputs->x_2, kernel->h_2);
-    double x0_plus_x1 = adder(*inputs->x_0, *inputs->x_1);
-    double x1_plus_x2 = adder(*inputs->x_1, *inputs->x_2);
+    //signal names are single character to make it more readable
+    //there is a diagram in this repository that shows what intermediate signals have which names
+    double a = multiplier(*inputs->x_0, kernel->h_0);
+    double b = multiplier(*inputs->x_1, kernel->h_1);
+    double c = multiplier(*inputs->x_2, kernel->h_2);
+    double d = adder(*inputs->x_0, *inputs->x_1);
+    double e = adder(*inputs->x_1, *inputs->x_2);
 
     //second layer of combinational logic
-    double x0_plus_x1_h01 = multiplier(x0_plus_x1, kernel->h_01);
-    double x1_plus_x2_h12 = multiplier(x1_plus_x2, kernel->h_12);
-    double x0_plus_x1_plus_x2 = adder(x0_plus_x1, *inputs->x_2);
-    double x0h0_minus_shift_reg_1 = adder(x0h0, (-1) * dequeue(shift_reg_1));
+    double f = multiplier(d, kernel->h_01);
+    double g = multiplier(e, kernel->h_12);
+    double h = adder(d, *inputs->x_2);
+    double j = adder(a, (-1) * dequeue(shift_reg_1));
     //need to do this after dequeueing from shift_reg_1
     //in hw, the SR would accept the value on the same clk edge that we dequeue from it
-    enqueue(shift_reg_1, x2h2); //enqueue x2h2 into the shift register (3x shift register)
+    enqueue(shift_reg_1, c); //enqueue x2h2 into the shift register (3x shift register)
 
     //third layer
-    double x0_plus_x1_plus_x2_h012 = multiplier(x0_plus_x1_plus_x2, kernel->h_012);
-    double x0_plus_x1_h01_minus_x1h1 = adder(x0_plus_x1_h01, ((-1)*x1h1));
-    double x1_plus_x2_h12_plus_x1h2 = adder(x1_plus_x2_h12, x1h1);
-    double y0 = adder(x0h0_minus_shift_reg_1, dequeue(shift_reg_2));
+    double m = multiplier(h, kernel->h_012);
+    double k = adder(f, ((-1)*b));
+    double l = adder(g, ((-1)*b));
+    double y0 = adder(j, dequeue(shift_reg_2));
 
     
     //fourth layer
-    double x0_plus_x1_plus_x2_h012_minus_x0_plus_x1_h01_minus_x1h1  = adder(x0_plus_x1_plus_x2_h012, (-1)*x0_plus_x1_h01_minus_x1h1);
-    double y1 = adder(x0_plus_x1_h01_minus_x1h1, (-1)*x0h0_minus_shift_reg_1);
-    enqueue(shift_reg_2, x1_plus_x2_h12_plus_x1h2);
+    double p  = adder(m, (-1)*k);
+    double y1 = adder(k, (-1)*j);
+    enqueue(shift_reg_2, l);
 
     //fifth layer
-    double y2 = adder(x0_plus_x1_plus_x2_h012_minus_x0_plus_x1_h01_minus_x1h1, (-1)*x1_plus_x2_h12_plus_x1h2);
+    double y2 = adder(p, (-1)*l);
 
 
     outputs->y_0 = y0;

@@ -68,18 +68,36 @@ void print_image_pixels(double* pixels, int size) {
         printf("Pixels are NULL\n");
         return;
     }
-
-    printf("Image Pixels:\n");
+    printf("\n\t");
+    for (int i = 0; i < 5; i++){
+        printf("--------");
+    }
+    printf("Image Pixels");
+    for (int i = 0; i < 4; i++){
+        printf("--------");
+    }
+    printf("-----\n\t|\t");
     for (int i = 0; i < size * size; i++) {
-        printf("%f ", pixels[i]);
-        if ((i + 1) % size == 0) {
-            printf("\n");
+        printf("%d \t", (int)pixels[i]);
+        if ((i + 1) % size == 0 && i != (size * size - 1)) {
+            printf("|\n\t|\t");
         }
     }
+    printf("|");
+
+    printf("\n\t");
+    for (int i = 0; i < 5; i++){
+        printf("--------");
+    }
+    printf("Image Pixels");
+    for (int i = 0; i < 4; i++){
+        printf("--------");
+    }
+    printf("-----");
 }
 
 /**
- * FUnction that will initialize the testing pixel data with random values
+ * Function that will initialize the testing pixel data with random values
  * 
  * @param size the width of the image in pixels.
  * 
@@ -127,22 +145,24 @@ void print_fcu_outputs(fcu_outputs_s* outputs, int starting, int ending, int idx
         return;
     }
 
+    int header_dash_count = 6; // Number of dashes in the header
+
     if (starting) {
-        printf("\t\t\t\tOutputs\n");
+        printf("\n\n\t\t\tOutputs\n");
         printf("\t");
-        for (int i = 0; i < 8; i++){
+        for (int i = 0; i < header_dash_count; i++){
             printf("--------");
         }
         printf("-\n");
     }
     
     if (!starting && !ending) {
-        printf("%d:\t| Y_0: %f \t| Y_1: %f \t| Y_2: %f |\n", idx, outputs->y_0, outputs->y_1, outputs->y_2);
+        printf("%d:\t| Y_0: %.2f \t| Y_1: %.2f \t| Y_2: %.2f \t|\n", idx, outputs->y_0, outputs->y_1, outputs->y_2);
     }
 
     if (ending) {
         printf("\t");
-        for (int i = 0; i < 8; i++){
+        for (int i = 0; i < header_dash_count; i++){
             printf("--------");
         }
         printf("-\n");

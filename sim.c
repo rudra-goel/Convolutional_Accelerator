@@ -18,12 +18,18 @@ double* image_pixels;
 fcu_coefficients_s kernel = {0.1, 0.1, 0.1};
 
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <image_size>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+    
     //initialize the shift registers
     init_shift_reg(&fcu_1_shift_reg_1, 'A');
     init_shift_reg(&fcu_1_shift_reg_2, 'B');
+    
     // Initialize pixel inputs
-    int image_size = 10; // Example size, can be adjusted
+    int image_size = atoi(argv[1]);
     image_pixels = init_pixel_inputs(image_size);
     print_image_pixels(image_pixels, image_size);
 

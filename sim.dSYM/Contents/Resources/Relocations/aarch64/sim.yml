@@ -2,22 +2,22 @@
 triple:          'arm64-apple-darwin'
 binary-path:     sim
 relocations:
-  - { offset: 0x26, size: 0x8, addend: 0x0, symName: _multiplier, symObjAddr: 0x0, symBinAddr: 0x100002EC0, symSize: 0xFC }
-  - { offset: 0x15A, size: 0x8, addend: 0x0, symName: _multiplier, symObjAddr: 0x0, symBinAddr: 0x100002EC0, symSize: 0xFC }
-  - { offset: 0x1F5, size: 0x8, addend: 0x0, symName: _adder, symObjAddr: 0xFC, symBinAddr: 0x100002FBC, symSize: 0xE8 }
-  - { offset: 0x290, size: 0x8, addend: 0x0, symName: _enqueue, symObjAddr: 0x1E4, symBinAddr: 0x1000030A4, symSize: 0x24 }
-  - { offset: 0x2C2, size: 0x8, addend: 0x0, symName: _dequeue, symObjAddr: 0x208, symBinAddr: 0x1000030C8, symSize: 0x124 }
-  - { offset: 0x34F, size: 0x8, addend: 0x0, symName: _init_shift_reg, symObjAddr: 0x32C, symBinAddr: 0x1000031EC, symSize: 0x178 }
-  - { offset: 0x381, size: 0x8, addend: 0x0, symName: _three_parallel_fcu, symObjAddr: 0x4A4, symBinAddr: 0x100003364, symSize: 0x254 }
-  - { offset: 0x58F, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x1000035B8, symSize: 0x1A4 }
-  - { offset: 0x5A8, size: 0x8, addend: 0x0, symName: _kernel, symObjAddr: 0x7B8, symBinAddr: 0x100008000, symSize: 0x0 }
+  - { offset: 0x26, size: 0x8, addend: 0x0, symName: _multiplier, symObjAddr: 0x0, symBinAddr: 0x100002E48, symSize: 0xFC }
+  - { offset: 0x15A, size: 0x8, addend: 0x0, symName: _multiplier, symObjAddr: 0x0, symBinAddr: 0x100002E48, symSize: 0xFC }
+  - { offset: 0x1F5, size: 0x8, addend: 0x0, symName: _adder, symObjAddr: 0xFC, symBinAddr: 0x100002F44, symSize: 0xE8 }
+  - { offset: 0x290, size: 0x8, addend: 0x0, symName: _enqueue, symObjAddr: 0x1E4, symBinAddr: 0x10000302C, symSize: 0x24 }
+  - { offset: 0x2C2, size: 0x8, addend: 0x0, symName: _dequeue, symObjAddr: 0x208, symBinAddr: 0x100003050, symSize: 0x124 }
+  - { offset: 0x34F, size: 0x8, addend: 0x0, symName: _init_shift_reg, symObjAddr: 0x32C, symBinAddr: 0x100003174, symSize: 0x178 }
+  - { offset: 0x381, size: 0x8, addend: 0x0, symName: _three_parallel_fcu, symObjAddr: 0x4A4, symBinAddr: 0x1000032EC, symSize: 0x254 }
+  - { offset: 0x58F, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100003540, symSize: 0x1F8 }
+  - { offset: 0x5A8, size: 0x8, addend: 0x0, symName: _kernel, symObjAddr: 0x810, symBinAddr: 0x100008000, symSize: 0x0 }
   - { offset: 0x62A, size: 0x8, addend: 0x0, symName: _fcu_1_shift_reg_1, symBinAddr: 0x100008030, symSize: 0x0 }
   - { offset: 0x6BB, size: 0x8, addend: 0x0, symName: _fcu_1_shift_reg_2, symBinAddr: 0x100008038, symSize: 0x0 }
   - { offset: 0x6D0, size: 0x8, addend: 0x0, symName: _image_pixels, symBinAddr: 0x100008040, symSize: 0x0 }
-  - { offset: 0x6E5, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x1000035B8, symSize: 0x1A4 }
-  - { offset: 0x745, size: 0x8, addend: 0x0, symName: _init_pixel_inputs, symObjAddr: 0x1A4, symBinAddr: 0x10000375C, symSize: 0xD4 }
-  - { offset: 0x797, size: 0x8, addend: 0x0, symName: _print_image_pixels, symObjAddr: 0x278, symBinAddr: 0x100003830, symSize: 0x24C }
-  - { offset: 0x855, size: 0x8, addend: 0x0, symName: _grab_next_ip_set, symObjAddr: 0x4C4, symBinAddr: 0x100003A7C, symSize: 0x8C }
-  - { offset: 0x879, size: 0x8, addend: 0x0, symName: _print_fcu_outputs, symObjAddr: 0x550, symBinAddr: 0x100003B08, symSize: 0x1AC }
-  - { offset: 0x90D, size: 0x8, addend: 0x0, symName: _print_shift_reg, symObjAddr: 0x6FC, symBinAddr: 0x100003CB4, symSize: 0xBC }
+  - { offset: 0x6E5, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100003540, symSize: 0x1F8 }
+  - { offset: 0x761, size: 0x8, addend: 0x0, symName: _init_pixel_inputs, symObjAddr: 0x1F8, symBinAddr: 0x100003738, symSize: 0xD4 }
+  - { offset: 0x7B3, size: 0x8, addend: 0x0, symName: _print_image_pixels, symObjAddr: 0x2CC, symBinAddr: 0x10000380C, symSize: 0x24C }
+  - { offset: 0x871, size: 0x8, addend: 0x0, symName: _grab_next_ip_set, symObjAddr: 0x518, symBinAddr: 0x100003A58, symSize: 0x8C }
+  - { offset: 0x895, size: 0x8, addend: 0x0, symName: _print_fcu_outputs, symObjAddr: 0x5A4, symBinAddr: 0x100003AE4, symSize: 0x1AC }
+  - { offset: 0x929, size: 0x8, addend: 0x0, symName: _print_shift_reg, symObjAddr: 0x750, symBinAddr: 0x100003C90, symSize: 0xBC }
 ...

@@ -51,12 +51,31 @@ typedef struct {
     double y_2;
 } fcu_outputs_s;
 
+typedef struct {
+    fcu_coefficients_s* kernel_row_1;
+    fcu_coefficients_s* kernel_row_2;
+    fcu_coefficients_s* kernel_row_3;
+} kernel_s;
+
 /**
  * Constants for the simulation program.
  */
 
-//stride of the kernel in the convolution layer
-const static int STRIDE = 10;
+/**
+ * STRIDE - This is the "length" of the image data
+ * Images in memory, like any data, is stored as an array rather than a 2D
+ * vector. As such, if the kernel (square) during the convolution layer wanted
+ * to pass through the image from left to write, it would have to set 
+ * three adjacent elements from adjacent rows as its inputs. 
+ * 
+ * In this image processer, the kernel is made from three 1D row vectors that
+ * each have three elements
+ * 
+ * Since this architecture employs three FCUs running in parallel (one for
+ * each row vector of the kernel convolved with a three element row vector from the image), each input set to the FCU cannot overlap inputs for the
+ * other FCUs as the kernel slides over and convolves
+ */
+const static int STRIDE = 100;
 
 
 

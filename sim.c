@@ -10,12 +10,15 @@ void grab_next_ip_set(fcu_inputs_s* inputs);
 double* init_pixel_inputs(int size);
 void print_image_pixels(double* pixels, int size);
 void printSimulatorStartMessage();
+void init_kernel(kernel_s** kernel);
+void init_fcu_coefficients(fcu_coefficients_s** h);
+
 
 queue_s* fcu_1_shift_reg_1;
 queue_s* fcu_1_shift_reg_2;
 
 double* image_pixels;
-fcu_coefficients_s kernel = {0.1, 0.1, 0.1};
+kernel_s* kernel;
 
 
 int main(int argc, char* argv[]) {
@@ -26,6 +29,10 @@ int main(int argc, char* argv[]) {
 
 
     printSimulatorStartMessage();
+
+    //initialize the kernel - ideally read from a file as ip without recompilation
+    init_kernel(&kernel);
+
     
     //initialize the shift registers
     init_shift_reg(&fcu_1_shift_reg_1, 'A');
@@ -61,7 +68,7 @@ int main(int argc, char* argv[]) {
             print_shift_reg(fcu_1_shift_reg_1);
             print_shift_reg(fcu_1_shift_reg_2);
         }
-        
+
         print_fcu_outputs(outputs, 0, 0, i);
         //free the outputs after printing
         free(outputs);
@@ -73,6 +80,51 @@ int main(int argc, char* argv[]) {
 
     //print the ending line (formatting)
     print_fcu_outputs(outputs, 0, 1, 0);
+}
+
+
+/**
+ * Initialize the kernel
+ */
+void init_kernel(kernel_s** kernel) {
+    *kernel = (kernel_s*)malloc(sizeof(kernel_s*));
+
+    if (*kernel == NULL) {
+        fprintf(stderr, "Memory allocation failed for kernel\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    (*kernel)->kernel_row_1 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
+    (*kernel)->kernel_row_2 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
+    (*kernel)->kernel_row_3 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
+    
+    if ((*kernel)->kernel_row_1 == NULL || 
+        (*kernel)->kernel_row_2 == NULL ||
+        (*kernel)->kernel_row_3 == NULL) {
+        
+        fprintf(stderr, "Memory allocation failed for kernel row vectors\n");
+        exit(EXIT_FAILURE);
+    }
+
+    //pass a pointer to a ptr for each kernel's row vector
+    //pointer manipulation goes crazy
+    init_fcu_coefficients(&((*kernel)->kernel_row_1));
+    init_fcu_coefficients(&((*kernel)->kernel_row_2));
+    init_fcu_coefficients(&((*kernel)->kernel_row_3));
+
+}
+
+/**
+ * initialize a row vector in the kernel
+ */
+void init_fcu_coefficients(fcu_coefficients_s** h) {
+    (*h)->h_0 = (double)rand();
+    (*h)->h_1 = (double)rand();
+    (*h)->h_2 = (double)rand();
+
+    (*h)->h_01 = (*h)->h_0+(*h)->h_1;
+    (*h)->h_12 = (*h)->h_1+(*h)->h_2;
+    (*h)->h_012 = (*h)->h_0+(*h)->h_1+(*h)->h_2;
 }
 
 //print all the pixel data in the image

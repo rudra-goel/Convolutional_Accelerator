@@ -55,6 +55,8 @@ typedef struct {
  * Constants for the simulation program.
  */
 
+//stride of the kernel in the convolution layer
+const static int STRIDE = 10;
 
 
 

@@ -9,7 +9,7 @@ void print_shift_reg(queue_s* queue);
 void grab_next_ip_set(fcu_inputs_s* inputs); 
 double* init_pixel_inputs(int size);
 void print_image_pixels(double* pixels, int size);
-
+void printSimulatorStartMessage();
 
 queue_s* fcu_1_shift_reg_1;
 queue_s* fcu_1_shift_reg_2;
@@ -23,6 +23,9 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Usage: %s <image_size>\n", argv[0]);
         return EXIT_FAILURE;
     }
+
+
+    printSimulatorStartMessage();
     
     //initialize the shift registers
     init_shift_reg(&fcu_1_shift_reg_1, 'A');
@@ -47,6 +50,8 @@ int main(int argc, char* argv[]) {
     //load in the first three pixel values
     grab_next_ip_set(&inputs);
     fcu_outputs_s* outputs;
+    
+    //print the beginning line (formatting)
     print_fcu_outputs(outputs, 1, 0, 0);
     
     for(int i = 0; i < (image_size*image_size) / 3; i++) {
@@ -56,6 +61,7 @@ int main(int argc, char* argv[]) {
             print_shift_reg(fcu_1_shift_reg_1);
             print_shift_reg(fcu_1_shift_reg_2);
         }
+        
         print_fcu_outputs(outputs, 0, 0, i);
         //free the outputs after printing
         free(outputs);
@@ -65,6 +71,7 @@ int main(int argc, char* argv[]) {
         usleep(10000);
     }
 
+    //print the ending line (formatting)
     print_fcu_outputs(outputs, 0, 1, 0);
 }
 
@@ -184,4 +191,16 @@ void print_shift_reg(queue_s* queue) {
     printf("\t\t----------------------------------------------\n");
     printf("\t\t| %f | --> | %f | --> | %f |\n", queue->tail->data, queue->middle->data, queue->head->data);
     printf("\t\t----------------------------------------------\n");
+}
+
+void printSimulatorStartMessage() {
+    printf("\n");
+    printf("  #####################################################\n");
+    printf("  #                                                   #\n");
+    printf("  #                                                   #\n");
+    printf("  #        Launching CNN Simulator v1.0               #\n");
+    printf("  #                                                   #\n");
+    printf("  #                                                   #\n");
+    printf("  #####################################################\n");
+    printf("\n");
 }

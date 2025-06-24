@@ -43,26 +43,25 @@ int main(int argc, char* argv[]) {
     image_pixels = init_pixel_inputs(image_size);
     print_image_pixels(image_pixels, image_size);
 
-    // Initialize pixel inputs with random values
+
     fcu_inputs_s inputs; 
     inputs.x_0 = (double*)malloc(sizeof(double));
     inputs.x_1 = (double*)malloc(sizeof(double));
     inputs.x_2 = (double*)malloc(sizeof(double));
     
+    //assign pixel inputs data to the first three pixels in the entire image
     inputs.x_0 = image_pixels; 
     inputs.x_1 = image_pixels + 1; 
     inputs.x_2 = image_pixels + 2; 
 
-
-    //load in the first three pixel values
-    grab_next_ip_set(&inputs);
     fcu_outputs_s* outputs;
     
     //print the beginning line (formatting)
     print_fcu_outputs(outputs, 1, 0, 0);
-    
+
+
     for(int i = 0; i < (image_size*image_size) / 3; i++) {
-        outputs = three_parallel_fcu(&inputs, &kernel, fcu_1_shift_reg_1, fcu_1_shift_reg_2);
+        outputs = three_parallel_fcu(&inputs, kernel->kernel_row_1, fcu_1_shift_reg_1, fcu_1_shift_reg_2);
         
         if (DEBUG_SHIFT_REGISTER) {
             print_shift_reg(fcu_1_shift_reg_1);
@@ -95,8 +94,8 @@ void init_kernel(kernel_s** kernel) {
     }
     
     (*kernel)->kernel_row_1 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
-    (*kernel)->kernel_row_2 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
     (*kernel)->kernel_row_3 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
+    (*kernel)->kernel_row_2 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
     
     if ((*kernel)->kernel_row_1 == NULL || 
         (*kernel)->kernel_row_2 == NULL ||
@@ -109,8 +108,8 @@ void init_kernel(kernel_s** kernel) {
     //pass a pointer to a ptr for each kernel's row vector
     //pointer manipulation goes crazy
     init_fcu_coefficients(&((*kernel)->kernel_row_1));
-    init_fcu_coefficients(&((*kernel)->kernel_row_2));
     init_fcu_coefficients(&((*kernel)->kernel_row_3));
+    init_fcu_coefficients(&((*kernel)->kernel_row_2));
 
 }
 
@@ -118,9 +117,23 @@ void init_kernel(kernel_s** kernel) {
  * initialize a row vector in the kernel
  */
 void init_fcu_coefficients(fcu_coefficients_s** h) {
+
+    printf ("initializing the fcu impulse response coeff");
+
+
     (*h)->h_0 = (double)rand();
+    while ((*h)->h_0 > 1.0) {
+        (*h)->h_0 /= 10.0;
+    }
     (*h)->h_1 = (double)rand();
+    while ((*h)->h_1 > 1.0) {
+        (*h)->h_1 /= 10.0;
+    }
     (*h)->h_2 = (double)rand();
+    while ((*h)->h_2 > 1.0) {
+        (*h)->h_2 /= 10.0;
+    }
+    
 
     (*h)->h_01 = (*h)->h_0+(*h)->h_1;
     (*h)->h_12 = (*h)->h_1+(*h)->h_2;

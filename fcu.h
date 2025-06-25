@@ -11,7 +11,7 @@
  } shift_reg_node_s;
 
  typedef struct {
-    char name;
+    char* name;
      shift_reg_node_s* head;
      shift_reg_node_s* tail;
      shift_reg_node_s* middle;
@@ -57,6 +57,18 @@ typedef struct {
     fcu_coefficients_s* kernel_row_3;
 } kernel_s;
 
+
+//struct for one Fast Convolutional Unit (FCU)
+//this struct simulates one layer of a the physical hardware that is 1/3 or the 3-parallel fcu
+//there will be three of these structs in the simulation, one for each row
+typedef struct {
+    fcu_inputs_s* inputs;
+    fcu_coefficients_s* h;
+    queue_s* shift_reg_1;
+    queue_s* shift_reg_2;
+    fcu_outputs_s* outputs;
+} fcu_s;
+
 /**
  * Constants for the simulation program.
  */
@@ -85,4 +97,4 @@ void enqueue(queue_s* queue, double value);
 double dequeue(queue_s* queue);
 fcu_outputs_s* three_parallel_fcu( fcu_inputs_s* inputs, fcu_coefficients_s* kernel, queue_s* shift_reg_1, queue_s* shift_reg_2);
 
-void init_shift_reg(queue_s** queue, char name);
+void init_shift_reg(queue_s** queue, char* name);

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "fcu.h"
 
@@ -12,13 +13,13 @@ void print_image_pixels(double* pixels, int size);
 void printSimulatorStartMessage();
 void init_kernel(kernel_s** kernel);
 void init_fcu_coefficients(fcu_coefficients_s** h);
-
-
-queue_s* fcu_1_shift_reg_1;
-queue_s* fcu_1_shift_reg_2;
+void init_fcu(fcu_s** fcu, char* fcu_name);
 
 double* image_pixels;
 kernel_s* kernel;
+
+//create an array of pointers to three parallel FCUs
+fcu_s* fcu_array[3];
 
 
 int main(int argc, char* argv[]) {
@@ -32,55 +33,58 @@ int main(int argc, char* argv[]) {
 
     //initialize the kernel - ideally read from a file as ip without recompilation
     init_kernel(&kernel);
-
-    
-    //initialize the shift registers
-    init_shift_reg(&fcu_1_shift_reg_1, 'A');
-    init_shift_reg(&fcu_1_shift_reg_2, 'B');
     
     // Initialize pixel inputs
     int image_size = atoi(argv[1]);
     image_pixels = init_pixel_inputs(image_size);
     print_image_pixels(image_pixels, image_size);
 
-
-    fcu_inputs_s inputs; 
-    inputs.x_0 = (double*)malloc(sizeof(double));
-    inputs.x_1 = (double*)malloc(sizeof(double));
-    inputs.x_2 = (double*)malloc(sizeof(double));
-    
-    //assign pixel inputs data to the first three pixels in the entire image
-    inputs.x_0 = image_pixels; 
-    inputs.x_1 = image_pixels + 1; 
-    inputs.x_2 = image_pixels + 2; 
-
-    fcu_outputs_s* outputs;
-    
-    //print the beginning line (formatting)
-    print_fcu_outputs(outputs, 1, 0, 0);
-
-
-    for(int i = 0; i < (image_size*image_size) / 3; i++) {
-        outputs = three_parallel_fcu(&inputs, kernel->kernel_row_1, fcu_1_shift_reg_1, fcu_1_shift_reg_2);
-        
-        if (DEBUG_SHIFT_REGISTER) {
-            print_shift_reg(fcu_1_shift_reg_1);
-            print_shift_reg(fcu_1_shift_reg_2);
-        }
-
-        print_fcu_outputs(outputs, 0, 0, i);
-        //free the outputs after printing
-        free(outputs);
-        //grab the next set of inputs
-        grab_next_ip_set(&inputs);
-
-        usleep(10000);
+    //initialize each FCU to have inputs, ptr to kernel, shift regs, and op struct
+    for (int i = 0; i < 3; i++) {
+        char* name = (char*)malloc(7 * sizeof(char));
+        name = "FCU - ";  
+        char* tmp; *tmp = (char)(i);
+        strcat(name, tmp);
+        init_fcu(&fcu_array[i], name);
     }
 
-    //print the ending line (formatting)
-    print_fcu_outputs(outputs, 0, 1, 0);
 }
 
+//initialize an FCU
+void init_fcu(fcu_s** fcu, char* fcu_name) {
+    //create a pointer to a fcu_s structure and assign it to the the value of the pointer passed into the arg
+    *fcu = (fcu_s*)malloc(sizeof(fcu_s));
+    
+    if (*fcu == NULL) {
+        fprintf(stderr, "Memory allocation failed for FCU\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // init the inpiuts struct
+    (*fcu)->inputs = (fcu_inputs_s*)malloc(sizeof(fcu_inputs_s));
+    if ((*fcu)->inputs == NULL) {
+        fprintf(stderr, "Memory allocation failed for FCU inputs\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    // Initialize coefficients
+    (*fcu)->h = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s));
+    if ((*fcu)->h == NULL) {
+        fprintf(stderr, "Memory allocation failed for FCU coefficients\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    // Initialize shift regs
+    init_shift_reg(&((*fcu)->shift_reg_1), strcat(fcu_name, "_sr_a"));
+    init_shift_reg(&((*fcu)->shift_reg_2), strcat(fcu_name, "_sr_b"));
+
+    // Initialize outputs struct
+    (*fcu)->outputs = (fcu_outputs_s*)malloc(sizeof(fcu_outputs_s));
+    if ((*fcu)->outputs == NULL) {
+        fprintf(stderr, "Memory allocation failed for FCU outputs\n");
+        exit(EXIT_FAILURE);
+    }
+}
 
 /**
  * Initialize the kernel

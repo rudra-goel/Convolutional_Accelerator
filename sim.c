@@ -48,6 +48,13 @@ int main(int argc, char* argv[]) {
         init_fcu(&fcu_array[i], name);
     }
 
+    //Each FCU has a set of FIR filter coefficients. These coefficients are stored in the variable 'kernel'
+    //Basically assign each FCU's 'h' var to point to the correct set of filter coefficients
+    fcu_array[0]->h = kernel->kernel_row_1;
+    fcu_array[1]->h = kernel->kernel_row_2;
+    fcu_array[2]->h = kernel->kernel_row_3;
+
+
 }
 
 //initialize an FCU

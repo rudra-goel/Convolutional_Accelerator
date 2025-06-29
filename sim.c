@@ -5,15 +5,18 @@
 
 #include "fcu.h"
 
-void print_fcu_outputs(fcu_outputs_s* outputs, int starting, int ending, int idx);
-void print_shift_reg(queue_s* queue);
+kernel_s* init_kernel(kernel_s* kernel);
+fcu_coefficients_s* init_fcu_coefficients(fcu_coefficients_s* h);
+fcu_s* init_fcu(fcu_s* fcu, char* fcu_name);
 void grab_next_ip_set(fcu_inputs_s* inputs); 
 double* init_pixel_inputs(int size);
-void print_image_pixels(double* pixels, int size);
+
 void printSimulatorStartMessage();
-void init_kernel(kernel_s** kernel);
-void init_fcu_coefficients(fcu_coefficients_s** h);
-void init_fcu(fcu_s** fcu, char* fcu_name);
+void print_kernel(kernel_s* kernel);
+void print_fcu_outputs(fcu_outputs_s* outputs, int starting, int ending, int idx);
+void print_shift_reg(queue_s* queue);
+void print_image_pixels(double* pixels, int size);
+
 
 double* image_pixels;
 kernel_s* kernel;
@@ -32,8 +35,10 @@ int main(int argc, char* argv[]) {
     printSimulatorStartMessage();
 
     //initialize the kernel - ideally read from a file as ip without recompilation
-    init_kernel(&kernel);
-    
+    kernel = init_kernel(kernel);
+
+    print_kernel(kernel);
+
     // Initialize pixel inputs
     int image_size = atoi(argv[1]);
     image_pixels = init_pixel_inputs(image_size);
@@ -45,7 +50,7 @@ int main(int argc, char* argv[]) {
         name = "FCU - ";  
         char* tmp; *tmp = (char)(i);
         strcat(name, tmp);
-        init_fcu(&fcu_array[i], name);
+        fcu_array[i] = init_fcu(fcu_array[i], name);
     }
 
     //Each FCU has a set of FIR filter coefficients. These coefficients are stored in the variable 'kernel'
@@ -55,100 +60,141 @@ int main(int argc, char* argv[]) {
     fcu_array[2]->h = kernel->kernel_row_3;
 
 
+
+
 }
 
 //initialize an FCU
-void init_fcu(fcu_s** fcu, char* fcu_name) {
+fcu_s* init_fcu(fcu_s* fcu, char* fcu_name) {
     //create a pointer to a fcu_s structure and assign it to the the value of the pointer passed into the arg
-    *fcu = (fcu_s*)malloc(sizeof(fcu_s));
+    fcu = (fcu_s*)malloc(sizeof(fcu_s));
     
-    if (*fcu == NULL) {
+    if (fcu == NULL) {
         fprintf(stderr, "Memory allocation failed for FCU\n");
         exit(EXIT_FAILURE);
     }
 
     // init the inpiuts struct
-    (*fcu)->inputs = (fcu_inputs_s*)malloc(sizeof(fcu_inputs_s));
-    if ((*fcu)->inputs == NULL) {
+    (fcu)->inputs = (fcu_inputs_s*)malloc(sizeof(fcu_inputs_s));
+    if ((fcu)->inputs == NULL) {
         fprintf(stderr, "Memory allocation failed for FCU inputs\n");
         exit(EXIT_FAILURE);
     }
     
     // Initialize coefficients
-    (*fcu)->h = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s));
-    if ((*fcu)->h == NULL) {
+    (fcu)->h = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s));
+    if ((fcu)->h == NULL) {
         fprintf(stderr, "Memory allocation failed for FCU coefficients\n");
         exit(EXIT_FAILURE);
     }
     
     // Initialize shift regs
-    init_shift_reg(&((*fcu)->shift_reg_1), strcat(fcu_name, "_sr_a"));
-    init_shift_reg(&((*fcu)->shift_reg_2), strcat(fcu_name, "_sr_b"));
+    init_shift_reg(&((fcu)->shift_reg_1), strcat(fcu_name, "_sr_a"));
+    init_shift_reg(&((fcu)->shift_reg_2), strcat(fcu_name, "_sr_b"));
 
     // Initialize outputs struct
-    (*fcu)->outputs = (fcu_outputs_s*)malloc(sizeof(fcu_outputs_s));
-    if ((*fcu)->outputs == NULL) {
+    (fcu)->outputs = (fcu_outputs_s*)malloc(sizeof(fcu_outputs_s));
+    if ((fcu)->outputs == NULL) {
         fprintf(stderr, "Memory allocation failed for FCU outputs\n");
         exit(EXIT_FAILURE);
     }
+
+    return fcu;
 }
+
+/**
+ * Print the kernel in a nice format
+ * 
+ * Assumes the kernel struct has already been initialized
+ */
+ void print_kernel(kernel_s* kernel) {
+    if (kernel == NULL ||
+        (*kernel).kernel_row_1 == NULL ||
+        (*kernel).kernel_row_2 == NULL ||
+        (*kernel).kernel_row_3 == NULL) {
+            printf("Kernel not initizialed properly.\nCould not print\n");
+    }
+
+    printf("**************** Kernel ****************\n");
+    printf("%f\t", (*kernel).kernel_row_1->h_0);
+    printf("%f\t", (*kernel).kernel_row_1->h_1);
+    printf("%f\t", (*kernel).kernel_row_1->h_2);
+    printf("\n");
+    printf("%f\t", (*kernel).kernel_row_2->h_0);
+    printf("%f\t", (*kernel).kernel_row_2->h_1);
+    printf("%f\t", (*kernel).kernel_row_2->h_2);
+    printf("\n");
+    printf("%f\t", (*kernel).kernel_row_3->h_0);
+    printf("%f\t", (*kernel).kernel_row_3->h_1);
+    printf("%f\t", (*kernel).kernel_row_3->h_2);
+    printf("\n");
+    printf("****************************************\n");
+ }
 
 /**
  * Initialize the kernel
  */
-void init_kernel(kernel_s** kernel) {
-    *kernel = (kernel_s*)malloc(sizeof(kernel_s*));
+kernel_s* init_kernel(kernel_s* kernel) {
+    kernel = (kernel_s*)malloc(sizeof(kernel_s*));
 
-    if (*kernel == NULL) {
+    if (kernel == NULL) {
         fprintf(stderr, "Memory allocation failed for kernel\n");
         exit(EXIT_FAILURE);
     }
     
-    (*kernel)->kernel_row_1 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
-    (*kernel)->kernel_row_3 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
-    (*kernel)->kernel_row_2 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
+    // (kernel)->kernel_row_1 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
+    // (kernel)->kernel_row_3 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
+    // (kernel)->kernel_row_2 = (fcu_coefficients_s*)malloc(sizeof(fcu_coefficients_s*));
     
-    if ((*kernel)->kernel_row_1 == NULL || 
-        (*kernel)->kernel_row_2 == NULL ||
-        (*kernel)->kernel_row_3 == NULL) {
+    // if ((kernel)->kernel_row_1 == NULL || 
+    //     (kernel)->kernel_row_2 == NULL ||
+    //     (kernel)->kernel_row_3 == NULL) {
         
-        fprintf(stderr, "Memory allocation failed for kernel row vectors\n");
-        exit(EXIT_FAILURE);
-    }
+    //     fprintf(stderr, "Memory allocation failed for kernel row vectors\n");
+    //     exit(EXIT_FAILURE);
+    // }
 
     //pass a pointer to a ptr for each kernel's row vector
-    //pointer manipulation goes crazy
-    init_fcu_coefficients(&((*kernel)->kernel_row_1));
-    init_fcu_coefficients(&((*kernel)->kernel_row_3));
-    init_fcu_coefficients(&((*kernel)->kernel_row_2));
-
+    (kernel)->kernel_row_1 = init_fcu_coefficients(((kernel)->kernel_row_1));
+    (kernel)->kernel_row_2 = init_fcu_coefficients(((kernel)->kernel_row_2));
+    (kernel)->kernel_row_3 = init_fcu_coefficients(((kernel)->kernel_row_3));
+    
+    return kernel;
 }
 
 /**
  * initialize a row vector in the kernel
  */
-void init_fcu_coefficients(fcu_coefficients_s** h) {
+fcu_coefficients_s* init_fcu_coefficients(fcu_coefficients_s* h) {
 
-    printf ("initializing the fcu impulse response coeff");
+    printf ("initializing the fcu impulse response coeff\n");
 
-
-    (*h)->h_0 = (double)rand();
-    while ((*h)->h_0 > 1.0) {
-        (*h)->h_0 /= 10.0;
+    h = (fcu_coefficients_s*)malloc((sizeof(fcu_coefficients_s)));
+    
+    if (h == NULL) {
+        fprintf(stderr, "Mem alloc for Fcu Coefficients failed\n");
+        exit(EXIT_FAILURE);
     }
-    (*h)->h_1 = (double)rand();
-    while ((*h)->h_1 > 1.0) {
-        (*h)->h_1 /= 10.0;
+
+    (h)->h_0 = (double)rand();
+    while ((h)->h_0 > 1.0) {
+        (h)->h_0 /= 10.0;
     }
-    (*h)->h_2 = (double)rand();
-    while ((*h)->h_2 > 1.0) {
-        (*h)->h_2 /= 10.0;
+    (h)->h_1 = (double)rand();
+    while ((h)->h_1 > 1.0) {
+        (h)->h_1 /= 10.0;
+    }
+    (h)->h_2 = (double)rand();
+    while ((h)->h_2 > 1.0) {
+        (h)->h_2 /= 10.0;
     }
     
 
-    (*h)->h_01 = (*h)->h_0+(*h)->h_1;
-    (*h)->h_12 = (*h)->h_1+(*h)->h_2;
-    (*h)->h_012 = (*h)->h_0+(*h)->h_1+(*h)->h_2;
+    (h)->h_01 = (h)->h_0+(h)->h_1;
+    (h)->h_12 = (h)->h_1+(h)->h_2;
+    (h)->h_012 = (h)->h_0+(h)->h_1+(h)->h_2;
+
+    return h;
 }
 
 //print all the pixel data in the image
@@ -271,12 +317,12 @@ void print_shift_reg(queue_s* queue) {
 
 void printSimulatorStartMessage() {
     printf("\n");
-    printf("  #####################################################\n");
-    printf("  #                                                   #\n");
-    printf("  #                                                   #\n");
-    printf("  #        Launching CNN Simulator v1.0               #\n");
-    printf("  #                                                   #\n");
-    printf("  #                                                   #\n");
-    printf("  #####################################################\n");
+    printf("  ################################################\n");
+    printf("  #                                              #\n");
+    printf("  #                                              #\n");
+    printf("  #        Launching CNN Simulator               #\n");
+    printf("  #                                              #\n");
+    printf("  #                                              #\n");
+    printf("  ################################################\n");
     printf("\n");
 }

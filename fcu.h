@@ -87,7 +87,7 @@ typedef struct {
  * each row vector of the kernel convolved with a three element row vector from the image), each input set to the FCU cannot overlap inputs for the
  * other FCUs as the kernel slides over and convolves
  */
-const static int STRIDE = 100;
+const static int STRIDE = 10;
 
 
 

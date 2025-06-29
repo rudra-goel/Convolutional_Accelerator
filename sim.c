@@ -47,9 +47,10 @@ int main(int argc, char* argv[]) {
     //initialize each FCU to have inputs, ptr to kernel, shift regs, and op struct
     for (int i = 0; i < 3; i++) {
         char* name = (char*)malloc(7 * sizeof(char));
-        name = "FCU - ";  
-        char* tmp; *tmp = (char)(i);
-        strcat(name, tmp);
+        // name = "FCU - ";  
+        // char* tmp; *tmp = (char)(i);
+        // strcat(name, tmp);
+
         fcu_array[i] = init_fcu(fcu_array[i], name);
     }
 
@@ -59,8 +60,11 @@ int main(int argc, char* argv[]) {
     fcu_array[1]->h = kernel->kernel_row_2;
     fcu_array[2]->h = kernel->kernel_row_3;
 
+    // assign inputs to the first set of image pixels
+    
+    //call the FCU algorithm on the input set
 
-
+    //slide the inputs over by the stride amount
 
 }
 

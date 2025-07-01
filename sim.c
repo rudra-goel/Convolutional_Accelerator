@@ -62,6 +62,27 @@ int main(int argc, char* argv[]) {
     fcu_array[2]->h = kernel->kernel_row_3;
 
     // assign inputs to the first set of image pixels
+    //assign the first set of three pointers to the inputs struct
+    //for each subsequent FCU, the ptrs to the inputs are the base plus the dimension offset for x_0
+
+    for (int i = 0; i < 3; i++) {
+        fcu_array[i]->inputs->x_0 = image_pixels + (image_size*i);
+        fcu_array[i]->inputs->x_1 = image_pixels+1+(image_size*i);
+        fcu_array[i]->inputs->x_2 = image_pixels+2+(image_size*i);
+    }
+
+
+    if (DEBUG_INPUT_ASSIGNEMNT) {
+        printf("\n\nBEGIN Initial input assignments to FCUs\n");
+        for (int i = 0; i < 3; i++) {
+            printf("FCU #%d: ", i+1);
+            printf("%f\t%f\t%f\n", *(fcu_array[i]->inputs->x_0),
+                *(fcu_array[i]->inputs->x_1),
+                *(fcu_array[i]->inputs->x_2));
+        }
+        printf("END Initial input assignments to FCUs\n");
+    }
+
     
     //call the FCU algorithm on the input set
 

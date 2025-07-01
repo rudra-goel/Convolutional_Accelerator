@@ -20,6 +20,7 @@
 void print_shift_reg(queue_s* queue);
 
 #define DEBUG_SHIFT_REGISTER 0
+#define DEBUG_IMAGE_PIXELS 0
 
 #endif 
 
@@ -87,7 +88,7 @@ typedef struct {
  * each row vector of the kernel convolved with a three element row vector from the image), each input set to the FCU cannot overlap inputs for the
  * other FCUs as the kernel slides over and convolves
  */
-const static int STRIDE = 10;
+const static int STRIDE = 3;
 
 
 

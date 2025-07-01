@@ -9,7 +9,7 @@ kernel_s* init_kernel(kernel_s* kernel);
 fcu_coefficients_s* init_fcu_coefficients(fcu_coefficients_s* h);
 fcu_s* init_fcu(fcu_s* fcu, char* fcu_name);
 void grab_next_ip_set(fcu_inputs_s* inputs); 
-double* init_pixel_inputs(int size);
+int init_pixel_inputs(int size);
 
 void printSimulatorStartMessage();
 void print_kernel(kernel_s* kernel);
@@ -41,7 +41,8 @@ int main(int argc, char* argv[]) {
 
     // Initialize pixel inputs
     int image_size = atoi(argv[1]);
-    image_pixels = init_pixel_inputs(image_size);
+
+    image_size = init_pixel_inputs(image_size);
     print_image_pixels(image_pixels, image_size);
 
     //initialize each FCU to have inputs, ptr to kernel, shift regs, and op struct
@@ -203,36 +204,50 @@ fcu_coefficients_s* init_fcu_coefficients(fcu_coefficients_s* h) {
 
 //print all the pixel data in the image
 void print_image_pixels(double* pixels, int size) {
+
+    
     if (pixels == NULL) {
         printf("Pixels are NULL\n");
         return;
     }
-    printf("\n\t");
-    for (int i = 0; i < 5; i++){
-        printf("--------");
-    }
-    printf("Image Pixels");
-    for (int i = 0; i < 4; i++){
-        printf("--------");
-    }
-    printf("-----\n\t|\t");
-    for (int i = 0; i < size * size; i++) {
-        printf("%d \t", (int)pixels[i]);
-        if ((i + 1) % size == 0 && i != (size * size - 1)) {
-            printf("|\n\t|\t");
+    if (DEBUG_IMAGE_PIXELS) {
+        printf("Begin printing raw image pixels\n");
+        
+        for(int i = 0; i < size * size; i++) {
+            printf("%d:\t%f\n", i, pixels[i]);
+            if ((i+1) % size == 0 && i != 0) {
+                printf("\n\n");
+            }
         }
-    }
-    printf("|");
 
-    printf("\n\t");
-    for (int i = 0; i < 5; i++){
-        printf("--------");
+        printf("Done printing raw image pixels\n");
+    } else {
+        printf("\n\t");
+        // for (int i = 0; i < 5; i++){
+        //     printf("--------");
+        // }
+        printf("Image Pixels\n");
+        // for (int i = 0; i < 4; i++){
+        //     printf("--------");
+        // }
+        printf("\n\t|\t");
+        for (int i = 0; i < size * size; i++) {
+            printf("%d \t", (int)pixels[i]);
+            if ((i + 1) % size == 0 && i != (size * size - 1)) {
+                printf("|\n\t|\t");
+            }
+        }
+        // printf("|");
+        // printf("\n\t");
+        // for (int i = 0; i < 5; i++){
+        //     printf("--------");
+        // }
+        printf("|\n\tImage Pixels");
+        // for (int i = 0; i < 4; i++){
+        //     printf("--------");
+        // }
+        // printf("-----");
     }
-    printf("Image Pixels");
-    for (int i = 0; i < 4; i++){
-        printf("--------");
-    }
-    printf("-----");
 }
 
 /**
@@ -242,19 +257,47 @@ void print_image_pixels(double* pixels, int size) {
  * 
  * Stored as an array that is size^2 long
  */
-double* init_pixel_inputs(int size) {
-    double* pixels = (double*)malloc(size * size * sizeof(double));
+int init_pixel_inputs(int size) {
+
+    //first determine an overall image size that is a multiple of the stride value
+    int new_size = size;
+    while (new_size % STRIDE != 0) {
+        new_size = new_size + 1;
+    }
+
+    //keep track of how many zeros we need to pad for right align and bottom rown
+    int padding_depth = new_size - size;
+
+    // double* pixels = (double*)malloc(new_size * new_size * sizeof(double));
+    image_pixels = (double*)malloc(new_size * new_size * sizeof(double));
+    double* pixels = image_pixels;
+
     if (pixels == NULL) {
         fprintf(stderr, "Memory allocation failed for pixel inputs\n");
         exit(EXIT_FAILURE);
     }
 
+    int counter = 0;
+
     //mod by 255 since pixels are 8-bit values
-    for (int i = 0; i < size * size; i++) {
-        pixels[i] = (double)(rand() % 255);
+    for (int i = 0; i < new_size * new_size; i++) {
+        //mem array is at the right edge of the original sizing
+        if (counter == size) {
+            //add zeros for padding_depth length
+            int x;
+            for (x = i; x < i + padding_depth; x++) {
+                pixels[x] = 0.0;
+            }
+            //update i to be the correct position in the overall image's memory
+            i = x;
+            counter = 0;
+        }
+        double tmp = (double)(rand() % 255);
+        pixels[i] = tmp == 0 ? (double)(rand() % 255) : tmp;
+        counter = counter + 1;
     }
 
-    return pixels;
+    return new_size;
 
 }
 

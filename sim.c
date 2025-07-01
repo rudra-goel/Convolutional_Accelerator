@@ -242,7 +242,7 @@ void print_image_pixels(double* pixels, int size) {
         // for (int i = 0; i < 5; i++){
         //     printf("--------");
         // }
-        printf("|\n\tImage Pixels");
+        printf("|\n\n\tImage Pixels");
         // for (int i = 0; i < 4; i++){
         //     printf("--------");
         // }

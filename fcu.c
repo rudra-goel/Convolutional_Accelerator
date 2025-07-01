@@ -103,7 +103,7 @@ double dequeue(queue_s* queue) {
 
 //accepts a pointer to a pointer to a queue_s structure
 // This function initializes a shift register with three nodes (head, middle, tail).
-void init_shift_reg (queue_s** queue, char name) {
+void init_shift_reg (queue_s** queue, char* name) {
     // Allocate memory for the queue structure
     *queue = (queue_s*)malloc(sizeof(queue_s));
 

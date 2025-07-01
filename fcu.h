@@ -11,7 +11,7 @@
  } shift_reg_node_s;
 
  typedef struct {
-    char name;
+    char* name;
      shift_reg_node_s* head;
      shift_reg_node_s* tail;
      shift_reg_node_s* middle;
@@ -20,6 +20,7 @@
 void print_shift_reg(queue_s* queue);
 
 #define DEBUG_SHIFT_REGISTER 0
+#define DEBUG_IMAGE_PIXELS 0
 
 #endif 
 
@@ -51,10 +52,43 @@ typedef struct {
     double y_2;
 } fcu_outputs_s;
 
+typedef struct {
+    fcu_coefficients_s* kernel_row_1;
+    fcu_coefficients_s* kernel_row_2;
+    fcu_coefficients_s* kernel_row_3;
+} kernel_s;
+
+
+//struct for one Fast Convolutional Unit (FCU)
+//this struct simulates one layer of a the physical hardware that is 1/3 or the 3-parallel fcu
+//there will be three of these structs in the simulation, one for each row
+typedef struct {
+    fcu_inputs_s* inputs;
+    fcu_coefficients_s* h;
+    queue_s* shift_reg_1;
+    queue_s* shift_reg_2;
+    fcu_outputs_s* outputs;
+} fcu_s;
+
 /**
  * Constants for the simulation program.
  */
 
+/**
+ * STRIDE - This is the "length" of the image data
+ * Images in memory, like any data, is stored as an array rather than a 2D
+ * vector. As such, if the kernel (square) during the convolution layer wanted
+ * to pass through the image from left to write, it would have to set 
+ * three adjacent elements from adjacent rows as its inputs. 
+ * 
+ * In this image processer, the kernel is made from three 1D row vectors that
+ * each have three elements
+ * 
+ * Since this architecture employs three FCUs running in parallel (one for
+ * each row vector of the kernel convolved with a three element row vector from the image), each input set to the FCU cannot overlap inputs for the
+ * other FCUs as the kernel slides over and convolves
+ */
+const static int STRIDE = 3;
 
 
 
@@ -64,4 +98,4 @@ void enqueue(queue_s* queue, double value);
 double dequeue(queue_s* queue);
 fcu_outputs_s* three_parallel_fcu( fcu_inputs_s* inputs, fcu_coefficients_s* kernel, queue_s* shift_reg_1, queue_s* shift_reg_2);
 
-void init_shift_reg(queue_s** queue, char name);
+void init_shift_reg(queue_s** queue, char* name);

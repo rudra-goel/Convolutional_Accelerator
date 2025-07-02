@@ -18,6 +18,8 @@ void print_kernel(kernel_s* kernel);
 void print_fcu_outputs(fcu_outputs_s* outputs, int starting, int ending, int idx);
 void print_shift_reg(queue_s* queue);
 void print_image_pixels(double* pixels, int size);
+void print_current_input_set();
+
 
 
 double* image_pixels;
@@ -86,10 +88,10 @@ int main(int argc, char* argv[]) {
         printf("END Initial input assignments to FCUs\n");
     }
     //call the FCU algorithm on the input set
-
+    int counter = 0;
     //slide the inputs over by the stride amount
     do {
-
+        counter = counter+1;
         //call the FCU pipeline 
 
         //print the current inputs
@@ -104,10 +106,17 @@ int main(int argc, char* argv[]) {
             printf("Input assignments to FCUs\n");
         }
 
+        if (DEBUG_INPUT_SLIDING) {
+            printf("\t\t\tInput set %d\n", counter);
+            print_current_input_set();
+        }
+
 
     } while(slide_inputs(fcu_array[0]) &&
             slide_inputs(fcu_array[1]) &&
             slide_inputs(fcu_array[2]));
+
+    
 }
 
 /**
@@ -319,7 +328,7 @@ void print_image_pixels(double* pixels, int size) {
         // for (int i = 0; i < 5; i++){
         //     printf("--------");
         // }
-        printf("|\n\n\tImage Pixels");
+        printf("|\n\n\tImage Pixels\n");
         // for (int i = 0; i < 4; i++){
         //     printf("--------");
         // }
@@ -449,4 +458,51 @@ void printSimulatorStartMessage() {
     printf("  #                                              #\n");
     printf("  ################################################\n");
     printf("\n");
+}
+
+void print_current_input_set() {
+    if (fcu_array == NULL) return;
+
+    //print first row inputs
+    printf("%.2f\t", *(fcu_array[0]->inputs->x_0));
+    printf("%.2f\t", *(fcu_array[0]->inputs->x_1));
+    printf("%.2f\t", *(fcu_array[0]->inputs->x_2));
+    
+    printf("\t\t");
+
+    //print first row kernel
+    printf("%.2f\t", kernel->kernel_row_1->h_0);
+    printf("%.2f\t", kernel->kernel_row_1->h_1);
+    printf("%.2f\t", kernel->kernel_row_1->h_2);
+
+    printf("\n\n");
+    
+    //print second row inputs
+    printf("%.2f\t", *(fcu_array[1]->inputs->x_0));
+    printf("%.2f\t", *(fcu_array[1]->inputs->x_1));
+    printf("%.2f\t", *(fcu_array[1]->inputs->x_2));
+    
+    printf("\t*\t");
+    
+    //print second row kernel
+    printf("%.2f\t", kernel->kernel_row_1->h_0);
+    printf("%.2f\t", kernel->kernel_row_1->h_1);
+    printf("%.2f\t", kernel->kernel_row_1->h_2);
+    
+    printf("\n\n");
+
+    //print third row inputs
+    printf("%.2f\t", *(fcu_array[2]->inputs->x_0));
+    printf("%.2f\t", *(fcu_array[2]->inputs->x_1));
+    printf("%.2f\t", *(fcu_array[2]->inputs->x_2));
+    
+    printf("\t\t");
+
+    //print third row kernel
+    printf("%.2f\t", kernel->kernel_row_2->h_0);
+    printf("%.2f\t", kernel->kernel_row_2->h_1);
+    printf("%.2f\t", kernel->kernel_row_2->h_2);
+
+    printf("\n\n");
+    
 }

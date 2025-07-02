@@ -14,6 +14,7 @@ int slide_inputs(fcu_s* fcu);
 
 
 void printSimulatorStartMessage();
+void printSimulatorEndMessage();
 void print_kernel(kernel_s* kernel);
 void print_fcu_outputs(fcu_outputs_s* outputs, int starting, int ending, int idx);
 void print_shift_reg(queue_s* queue);
@@ -48,7 +49,7 @@ int main(int argc, char* argv[]) {
     image_size = atoi(argv[1]);
 
     image_size = init_pixel_inputs(image_size);
-    print_image_pixels(image_pixels, image_size);
+    if (DEBUG_IMAGE_PIXELS) print_image_pixels(image_pixels, image_size);
 
     //initialize each FCU to have inputs, ptr to kernel, shift regs, and op struct
     for (int i = 0; i < 3; i++) {
@@ -91,9 +92,12 @@ int main(int argc, char* argv[]) {
     int counter = 0;
     //slide the inputs over by the stride amount
     do {
-        counter = counter+1;
+        
         //call the FCU pipeline 
-
+        three_parallel_fcu(fcu_array[0]->inputs, kernel->kernel_row_1, fcu_array[0]->shift_reg_1, fcu_array[0]->shift_reg_2);
+        three_parallel_fcu(fcu_array[1]->inputs, kernel->kernel_row_1, fcu_array[1]->shift_reg_1, fcu_array[1]->shift_reg_2);
+        three_parallel_fcu(fcu_array[2]->inputs, kernel->kernel_row_1, fcu_array[2]->shift_reg_1, fcu_array[2]->shift_reg_2);
+        
         //print the current inputs
         if (DEBUG_INPUT_ASSIGNEMNT) {
             printf("\nInput assignments to FCUs\n");
@@ -107,16 +111,21 @@ int main(int argc, char* argv[]) {
         }
 
         if (DEBUG_INPUT_SLIDING) {
-            printf("\t\t\tInput set %d\n", counter);
+            counter = counter+1;
+
+            printf("\tPixels");
+            printf("\t\tInput set %d", counter);
+            printf("\t\tKernel\n");
             print_current_input_set();
         }
 
+        // usleep(5000);
 
     } while(slide_inputs(fcu_array[0]) &&
             slide_inputs(fcu_array[1]) &&
             slide_inputs(fcu_array[2]));
 
-    
+    printSimulatorEndMessage();
 }
 
 /**
@@ -450,13 +459,21 @@ void print_shift_reg(queue_s* queue) {
 
 void printSimulatorStartMessage() {
     printf("\n");
-    printf("  ################################################\n");
-    printf("  #                                              #\n");
-    printf("  #                                              #\n");
-    printf("  #        Launching CNN Simulator               #\n");
-    printf("  #                                              #\n");
-    printf("  #                                              #\n");
-    printf("  ################################################\n");
+    printf("  ##########################################\n");
+    printf("  #                                        #\n");
+    printf("  #                                        #\n");
+    printf("  #        Launching CNN Simulator         #\n");
+    printf("  #                                        #\n");
+    printf("  #                                        #\n");
+    printf("  ##########################################\n");
+    printf("\n");
+}
+
+void printSimulatorEndMessage() {
+    printf("\n");
+    printf("  ##########################################\n");
+    printf("  #          Ending CNN Simulator          #\n");
+    printf("  ##########################################\n");
     printf("\n");
 }
 
@@ -475,7 +492,7 @@ void print_current_input_set() {
     printf("%.2f\t", kernel->kernel_row_1->h_1);
     printf("%.2f\t", kernel->kernel_row_1->h_2);
 
-    printf("\n\n");
+    printf("\n");
     
     //print second row inputs
     printf("%.2f\t", *(fcu_array[1]->inputs->x_0));
@@ -489,7 +506,7 @@ void print_current_input_set() {
     printf("%.2f\t", kernel->kernel_row_1->h_1);
     printf("%.2f\t", kernel->kernel_row_1->h_2);
     
-    printf("\n\n");
+    printf("\n");
 
     //print third row inputs
     printf("%.2f\t", *(fcu_array[2]->inputs->x_0));

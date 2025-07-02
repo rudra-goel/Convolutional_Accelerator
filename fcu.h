@@ -22,6 +22,7 @@ void print_shift_reg(queue_s* queue);
 #define DEBUG_SHIFT_REGISTER 0
 #define DEBUG_IMAGE_PIXELS 0
 #define DEBUG_INPUT_ASSIGNEMNT 0
+#define DEBUG_IMAGE_PIXELS 0
 #define DEBUG_INPUT_SLIDING 0
 
 #endif 

@@ -10,6 +10,8 @@ fcu_coefficients_s* init_fcu_coefficients(fcu_coefficients_s* h);
 fcu_s* init_fcu(fcu_s* fcu, char* fcu_name);
 void grab_next_ip_set(fcu_inputs_s* inputs); 
 int init_pixel_inputs(int size);
+int slide_inputs(fcu_s* fcu);
+
 
 void printSimulatorStartMessage();
 void print_kernel(kernel_s* kernel);
@@ -20,6 +22,7 @@ void print_image_pixels(double* pixels, int size);
 
 double* image_pixels;
 kernel_s* kernel;
+int image_size;
 
 //create an array of pointers to three parallel FCUs
 fcu_s* fcu_array[3];
@@ -40,7 +43,7 @@ int main(int argc, char* argv[]) {
     print_kernel(kernel);
 
     // Initialize pixel inputs
-    int image_size = atoi(argv[1]);
+    image_size = atoi(argv[1]);
 
     image_size = init_pixel_inputs(image_size);
     print_image_pixels(image_pixels, image_size);
@@ -75,19 +78,72 @@ int main(int argc, char* argv[]) {
     if (DEBUG_INPUT_ASSIGNEMNT) {
         printf("\n\nBEGIN Initial input assignments to FCUs\n");
         for (int i = 0; i < 3; i++) {
-            printf("FCU #%d: ", i+1);
-            printf("%f\t%f\t%f\n", *(fcu_array[i]->inputs->x_0),
+            printf("\tFCU #%d: ", i+1);
+            printf("%.2f\t%.2f\t%.2f\n", *(fcu_array[i]->inputs->x_0),
                 *(fcu_array[i]->inputs->x_1),
                 *(fcu_array[i]->inputs->x_2));
         }
         printf("END Initial input assignments to FCUs\n");
     }
-
-    
     //call the FCU algorithm on the input set
 
     //slide the inputs over by the stride amount
+    do {
 
+        //call the FCU pipeline 
+
+        //print the current inputs
+        if (DEBUG_INPUT_ASSIGNEMNT) {
+            printf("\nInput assignments to FCUs\n");
+            for (int i = 0; i < 3; i++) {
+                printf("\tFCU #%d: ", i+1);
+                printf("%.2f\t%.2f\t%.2f\n", *(fcu_array[i]->inputs->x_0),
+                    *(fcu_array[i]->inputs->x_1),
+                    *(fcu_array[i]->inputs->x_2));
+            }
+            printf("Input assignments to FCUs\n");
+        }
+
+
+    } while(slide_inputs(fcu_array[0]) &&
+            slide_inputs(fcu_array[1]) &&
+            slide_inputs(fcu_array[2]));
+}
+
+/**
+ * Function to shift the inputs to the FCU over by the stride amount
+ * 
+ * We know when we will reach the end of a row for a FCU by finding the difference in their pointers
+ * Since the pixel is stored in contiguous memory
+ * 
+ * 
+ */
+int slide_inputs(fcu_s* fcu) {
+    //find the difference between the addr-of third input and the addr of the first pixel
+    double* third_input = fcu->inputs->x_2;
+    int diff = third_input - image_pixels + 1;
+
+    //reached end of a row
+    if (diff % (image_size) == 0) {
+
+        //need to detect if we've reached the final row set for the entire image
+        if (diff + (image_size*(STRIDE-1) + 1) > image_size*image_size) {
+            return 0;
+        }
+
+        //if not reached end, then slide kernel as normal
+        fcu->inputs->x_0 = fcu->inputs->x_0 + STRIDE + (image_size*(STRIDE-1));
+        fcu->inputs->x_1 = fcu->inputs->x_1 + STRIDE + (image_size*(STRIDE-1));
+        fcu->inputs->x_2 = fcu->inputs->x_2 + STRIDE + (image_size*(STRIDE-1));
+
+    } else {
+        // in the middle of a row so slide as normal
+        fcu->inputs->x_0 = fcu->inputs->x_0 + STRIDE;
+        fcu->inputs->x_1 = fcu->inputs->x_1 + STRIDE;
+        fcu->inputs->x_2 = fcu->inputs->x_2 + STRIDE;
+    }
+
+    return 1;
 }
 
 //initialize an FCU

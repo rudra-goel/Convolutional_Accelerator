@@ -92,12 +92,19 @@ int main(int argc, char* argv[]) {
     int counter = 0;
     //slide the inputs over by the stride amount
     do {
+        counter = counter+1;
         
         //call the FCU pipeline 
-        three_parallel_fcu(fcu_array[0]->inputs, kernel->kernel_row_1, fcu_array[0]->shift_reg_1, fcu_array[0]->shift_reg_2);
-        three_parallel_fcu(fcu_array[1]->inputs, kernel->kernel_row_1, fcu_array[1]->shift_reg_1, fcu_array[1]->shift_reg_2);
-        three_parallel_fcu(fcu_array[2]->inputs, kernel->kernel_row_1, fcu_array[2]->shift_reg_1, fcu_array[2]->shift_reg_2);
+        fcu_array[0]->outputs = three_parallel_fcu(fcu_array[0]->inputs, kernel->kernel_row_1, fcu_array[0]->shift_reg_1, fcu_array[0]->shift_reg_2);
+        fcu_array[1]->outputs = three_parallel_fcu(fcu_array[1]->inputs, kernel->kernel_row_1, fcu_array[1]->shift_reg_1, fcu_array[1]->shift_reg_2);
+        fcu_array[2]->outputs = three_parallel_fcu(fcu_array[2]->inputs, kernel->kernel_row_1, fcu_array[2]->shift_reg_1, fcu_array[2]->shift_reg_2);
         
+        //print the outputs of the fcu pipeline
+        print_fcu_outputs(fcu_array[0]->outputs, 0, 0, counter);
+        print_fcu_outputs(fcu_array[1]->outputs, 0, 0, counter);
+        print_fcu_outputs(fcu_array[2]->outputs, 0, 0, counter);
+        printf("\n\n");
+
         //print the current inputs
         if (DEBUG_INPUT_ASSIGNEMNT) {
             printf("\nInput assignments to FCUs\n");
@@ -111,15 +118,12 @@ int main(int argc, char* argv[]) {
         }
 
         if (DEBUG_INPUT_SLIDING) {
-            counter = counter+1;
 
             printf("\tPixels");
             printf("\t\tInput set %d", counter);
             printf("\t\tKernel\n");
             print_current_input_set();
         }
-
-        // usleep(5000);
 
     } while(slide_inputs(fcu_array[0]) &&
             slide_inputs(fcu_array[1]) &&

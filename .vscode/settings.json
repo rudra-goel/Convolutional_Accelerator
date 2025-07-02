@@ -6,5 +6,8 @@
         "**/.svn": false,
         "**/Thumbs.db": false
     },
-    "workbench.colorTheme": "Default High Contrast"
+    "workbench.colorTheme": "Default High Contrast",
+    "files.associations": {
+        "fcu.h": "c"
+    }
 }

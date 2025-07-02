@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 #include <math.h>
 
 
@@ -196,6 +198,8 @@ fcu_outputs_s* three_parallel_fcu(
     outputs->y_0 = y0;
     outputs->y_1 = y1;
     outputs->y_2 = y2;
+
+    usleep(50000);
 
     return outputs;
 }

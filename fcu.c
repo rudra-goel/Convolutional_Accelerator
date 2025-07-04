@@ -199,7 +199,5 @@ fcu_outputs_s* three_parallel_fcu(
     outputs->y_1 = y1;
     outputs->y_2 = y2;
 
-    usleep(50000);
-
     return outputs;
 }

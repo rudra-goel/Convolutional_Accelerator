@@ -6,7 +6,7 @@
         "**/.svn": false,
         "**/Thumbs.db": false
     },
-    "workbench.colorTheme": "Default High Contrast",
+    "workbench.colorTheme": "GitHub Dark",
     "files.associations": {
         "fcu.h": "c"
     }

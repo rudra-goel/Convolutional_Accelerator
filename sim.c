@@ -24,8 +24,20 @@ void print_current_input_set();
 
 
 double* image_pixels;
+/**
+ * used to store the output of the convolution layer 
+ * the size of the feature map is controlled by hyperparameters
+ * --> W is the Size of the input image
+ * --> F is the size of the filter kernel
+ * --> S is the stride
+ * --> P is the padding
+ * 
+ * Output size = ((W - F + 2P) / S) + 1
+ */
+double* output_feature_map;
 kernel_s* kernel;
 int image_size;
+int kernel_size;
 
 //create an array of pointers to three parallel FCUs
 fcu_s* fcu_array[3];
@@ -42,13 +54,20 @@ int main(int argc, char* argv[]) {
 
     //initialize the kernel - ideally read from a file as ip without recompilation
     kernel = init_kernel(kernel);
+    kernel_size = 3;
 
     print_kernel(kernel);
 
     // Initialize pixel inputs
-    image_size = atoi(argv[1]);
+    int input_image_size = atoi(argv[1]);
+    image_size = init_pixel_inputs(input_image_size);
+    
+    int padding = image_size - input_image_size;
 
-    image_size = init_pixel_inputs(image_size);
+    //malloc size of the feature map
+    int feature_map_size = ((input_image_size - kernel_size + 2 * padding) / kernel_size) + 1;
+    output_feature_map = (double*)malloc(feature_map_size * feature_map_size * sizeof(double));
+
     if (DEBUG_IMAGE_PIXELS) print_image_pixels(image_pixels, image_size);
 
     //initialize each FCU to have inputs, ptr to kernel, shift regs, and op struct
@@ -90,21 +109,33 @@ int main(int argc, char* argv[]) {
     }
     //call the FCU algorithm on the input set
     int counter = 0;
+
+    fcu_outputs_s* results = (fcu_outputs_s*)malloc(sizeof(fcu_outputs_s));
+
     //slide the inputs over by the stride amount
     do {
-        counter = counter+1;
         
         //call the FCU pipeline 
         fcu_array[0]->outputs = three_parallel_fcu(fcu_array[0]->inputs, kernel->kernel_row_1, fcu_array[0]->shift_reg_1, fcu_array[0]->shift_reg_2);
         fcu_array[1]->outputs = three_parallel_fcu(fcu_array[1]->inputs, kernel->kernel_row_1, fcu_array[1]->shift_reg_1, fcu_array[1]->shift_reg_2);
         fcu_array[2]->outputs = three_parallel_fcu(fcu_array[2]->inputs, kernel->kernel_row_1, fcu_array[2]->shift_reg_1, fcu_array[2]->shift_reg_2);
         
-        //print the outputs of the fcu pipeline
-        print_fcu_outputs(fcu_array[0]->outputs, 0, 0, counter);
-        print_fcu_outputs(fcu_array[1]->outputs, 0, 0, counter);
-        print_fcu_outputs(fcu_array[2]->outputs, 0, 0, counter);
-        printf("\n\n");
+        //combine the outputs of each fcu into one fcu_outputs struct
+        results->y_0 = fcu_array[0]->outputs->y_0 + fcu_array[1]->outputs->y_0 + fcu_array[2]->outputs->y_0;
+        results->y_1 = fcu_array[0]->outputs->y_1 + fcu_array[1]->outputs->y_1 + fcu_array[2]->outputs->y_1;
+        results->y_2 = fcu_array[0]->outputs->y_2 + fcu_array[1]->outputs->y_2 + fcu_array[2]->outputs->y_2;
+        
+        //print the combined outputs
+       if (DEBUG_FCU_OUTPUTS) print_fcu_outputs(results, 0, 0, counter);
+        
+        //assign to the output array
+        output_feature_map[counter * kernel_size] = results->y_0;
+        output_feature_map[counter * kernel_size + 1] = results->y_1;
+        output_feature_map[counter * kernel_size + 2] = results->y_2;
 
+        
+
+        counter = counter + 1;
         //print the current inputs
         if (DEBUG_INPUT_ASSIGNEMNT) {
             printf("\nInput assignments to FCUs\n");
@@ -128,6 +159,24 @@ int main(int argc, char* argv[]) {
     } while(slide_inputs(fcu_array[0]) &&
             slide_inputs(fcu_array[1]) &&
             slide_inputs(fcu_array[2]));
+
+    if (DEBUG_FEATURE_MAP) {
+        printf("\nFeature Map Output\n");
+        int i;
+        for(i = 0; i < feature_map_size; i++) {
+            
+            printf("Row %d:\t", i+1 % feature_map_size);
+
+            for (int j = i * feature_map_size; j < (i + 1) * feature_map_size; j++) {
+                printf("%.2f\t", output_feature_map[j]);
+            }
+
+            printf("\n");
+
+
+        }
+        
+    }
 
     printSimulatorEndMessage();
 }
@@ -271,7 +320,7 @@ kernel_s* init_kernel(kernel_s* kernel) {
  */
 fcu_coefficients_s* init_fcu_coefficients(fcu_coefficients_s* h) {
 
-    printf ("initializing the fcu impulse response coeff\n");
+    // printf ("initializing the fcu impulse response coeff\n");
 
     h = (fcu_coefficients_s*)malloc((sizeof(fcu_coefficients_s)));
     
@@ -309,43 +358,15 @@ void print_image_pixels(double* pixels, int size) {
         printf("Pixels are NULL\n");
         return;
     }
-    if (DEBUG_IMAGE_PIXELS) {
-        printf("Begin printing raw image pixels\n");
-        
-        for(int i = 0; i < size * size; i++) {
-            printf("%d:\t%f\n", i, pixels[i]);
-            if ((i+1) % size == 0 && i != 0) {
-                printf("\n\n");
-            }
+    printf("\n\nImage Pixels\n");
+    for(int i = 0; i < image_size; i++) {
+        printf("Row %d:\t", i+1 % image_size);
+
+        for (int j = i * image_size; j < (i + 1) * image_size; j++) {
+            printf("%.2f\t", image_pixels[j]);
         }
 
-        printf("Done printing raw image pixels\n");
-    } else {
-        printf("\n\t");
-        // for (int i = 0; i < 5; i++){
-        //     printf("--------");
-        // }
-        printf("Image Pixels\n");
-        // for (int i = 0; i < 4; i++){
-        //     printf("--------");
-        // }
-        printf("\n\t|\t");
-        for (int i = 0; i < size * size; i++) {
-            printf("%d \t", (int)pixels[i]);
-            if ((i + 1) % size == 0 && i != (size * size - 1)) {
-                printf("|\n\t|\t");
-            }
-        }
-        // printf("|");
-        // printf("\n\t");
-        // for (int i = 0; i < 5; i++){
-        //     printf("--------");
-        // }
-        printf("|\n\n\tImage Pixels\n");
-        // for (int i = 0; i < 4; i++){
-        //     printf("--------");
-        // }
-        // printf("-----");
+        printf("\n");
     }
 }
 

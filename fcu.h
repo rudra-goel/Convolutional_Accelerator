@@ -22,11 +22,11 @@ void print_shift_reg(queue_s* queue);
 
 //debugs
 #define DEBUG_SHIFT_REGISTER 0
-#define DEBUG_IMAGE_PIXELS 0
+#define DEBUG_IMAGE_PIXELS 1
 #define DEBUG_INPUT_ASSIGNEMNT 0
-#define DEBUG_IMAGE_PIXELS 0
 #define DEBUG_INPUT_SLIDING 0
-
+#define DEBUG_FEATURE_MAP 1
+#define DEBUG_FCU_OUTPUTS 0
 #endif 
 
 #include <stdio.h>
@@ -101,6 +101,10 @@ double multiplier(double x_0, double h_0);
 double adder(double x_0, double x_1);
 void enqueue(queue_s* queue, double value);
 double dequeue(queue_s* queue);
-fcu_outputs_s* three_parallel_fcu( fcu_inputs_s* inputs, fcu_coefficients_s* kernel, queue_s* shift_reg_1, queue_s* shift_reg_2);
+fcu_outputs_s* three_parallel_fcu(  fcu_inputs_s* inputs, 
+                                    fcu_coefficients_s* kernel, 
+                                    queue_s* shift_reg_1, 
+                                    queue_s* shift_reg_2
+                                    );
 
 void init_shift_reg(queue_s** queue, char* name);

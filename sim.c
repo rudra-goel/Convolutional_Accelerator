@@ -73,10 +73,6 @@ int main(int argc, char* argv[]) {
     //initialize each FCU to have inputs, ptr to kernel, shift regs, and op struct
     for (int i = 0; i < 3; i++) {
         char* name = (char*)malloc(7 * sizeof(char));
-        // name = "FCU - ";  
-        // char* tmp; *tmp = (char)(i);
-        // strcat(name, tmp);
-
         fcu_array[i] = init_fcu(fcu_array[i], name);
     }
 
@@ -172,8 +168,6 @@ int main(int argc, char* argv[]) {
             }
 
             printf("\n");
-
-
         }
         
     }
@@ -329,18 +323,23 @@ fcu_coefficients_s* init_fcu_coefficients(fcu_coefficients_s* h) {
         exit(EXIT_FAILURE);
     }
 
-    (h)->h_0 = (double)rand();
-    while ((h)->h_0 > 1.0) {
-        (h)->h_0 /= 10.0;
-    }
-    (h)->h_1 = (double)rand();
-    while ((h)->h_1 > 1.0) {
-        (h)->h_1 /= 10.0;
-    }
-    (h)->h_2 = (double)rand();
-    while ((h)->h_2 > 1.0) {
-        (h)->h_2 /= 10.0;
-    }
+    //Vertical Edge Detection Kernel
+    (h)->h_0 = -1.0;
+    (h)->h_1 = 0.0;
+    (h)->h_2 = -1.0;
+
+    // (h)->h_0 = (double)rand();
+    // while ((h)->h_0 > 1.0) {
+    //     (h)->h_0 /= 10.0;
+    // }
+    // (h)->h_1 = (double)rand();
+    // while ((h)->h_1 > 1.0) {
+    //     (h)->h_1 /= 10.0;
+    // }
+    // (h)->h_2 = (double)rand();
+    // while ((h)->h_2 > 1.0) {
+    //     (h)->h_2 /= 10.0;
+    // }
     
 
     (h)->h_01 = (h)->h_0+(h)->h_1;
@@ -484,21 +483,21 @@ void print_shift_reg(queue_s* queue) {
 
 void printSimulatorStartMessage() {
     printf("\n");
-    printf("  ##########################################\n");
-    printf("  #                                        #\n");
-    printf("  #                                        #\n");
-    printf("  #        Launching CNN Simulator         #\n");
-    printf("  #                                        #\n");
-    printf("  #                                        #\n");
-    printf("  ##########################################\n");
+    printf("##########################################\n");
+    printf("#                                        #\n");
+    printf("#                                        #\n");
+    printf("#        Launching CNN Simulator         #\n");
+    printf("#                                        #\n");
+    printf("#                                        #\n");
+    printf("##########################################\n");
     printf("\n");
 }
 
 void printSimulatorEndMessage() {
     printf("\n");
-    printf("  ##########################################\n");
-    printf("  #          Ending CNN Simulator          #\n");
-    printf("  ##########################################\n");
+    printf("##########################################\n");
+    printf("#          Ending CNN Simulator          #\n");
+    printf("##########################################\n");
     printf("\n");
 }
 

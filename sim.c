@@ -9,8 +9,9 @@ kernel_s* init_kernel(kernel_s* kernel);
 fcu_coefficients_s* init_fcu_coefficients(fcu_coefficients_s* h);
 fcu_s* init_fcu(fcu_s* fcu, char* fcu_name);
 void grab_next_ip_set(fcu_inputs_s* inputs); 
-int init_pixel_inputs(int size);
+int init_pixel_inputs(int size, int mode, char* filename);
 int slide_inputs(fcu_s* fcu);
+void generate_feature_map(char* filename, int size);
 
 
 void printSimulatorStartMessage();
@@ -20,6 +21,7 @@ void print_fcu_outputs(fcu_outputs_s* outputs, int starting, int ending, int idx
 void print_shift_reg(queue_s* queue);
 void print_image_pixels(double* pixels, int size);
 void print_current_input_set();
+void check_fcu_inputs_to_img_pixels(double* pixels);
 
 
 
@@ -45,10 +47,27 @@ fcu_s* fcu_array[3];
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <image_size>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <image_size> [-f|-m|-s]\n", argv[0]);
+        fprintf(stderr, "  -f: fast (0.025 seconds)\n");
+        fprintf(stderr, "  -m: medium (0.25 seconds)\n");
+        fprintf(stderr, "  -s: slow (0.5 seconds, default)\n");
         return EXIT_FAILURE;
     }
 
+    // Parse sleep duration flag
+    int sleep_duration = 25000; // Default to -s (0.025 seconds = 25000 microseconds)
+    if (argc >= 3) {
+        if (strcmp(argv[2], "-f") == 0) {
+            sleep_duration = 25000;  // 0.025 seconds
+        } else if (strcmp(argv[2], "-m") == 0) {
+            sleep_duration = 250000; // 0.25 seconds
+        } else if (strcmp(argv[2], "-s") == 0) {
+            sleep_duration = 500000; // 0.5 seconds
+        } else {
+            fprintf(stderr, "Invalid speed flag. Use -f, -m, or -s\n");
+            return EXIT_FAILURE;
+        }
+    }
 
     printSimulatorStartMessage();
 
@@ -60,7 +79,7 @@ int main(int argc, char* argv[]) {
 
     // Initialize pixel inputs
     int input_image_size = atoi(argv[1]);
-    image_size = init_pixel_inputs(input_image_size);
+    image_size = init_pixel_inputs(input_image_size, 0, "inputs/square.txt");
     
     int padding = image_size - input_image_size;
 
@@ -73,10 +92,6 @@ int main(int argc, char* argv[]) {
     //initialize each FCU to have inputs, ptr to kernel, shift regs, and op struct
     for (int i = 0; i < 3; i++) {
         char* name = (char*)malloc(7 * sizeof(char));
-        // name = "FCU - ";  
-        // char* tmp; *tmp = (char)(i);
-        // strcat(name, tmp);
-
         fcu_array[i] = init_fcu(fcu_array[i], name);
     }
 
@@ -125,14 +140,22 @@ int main(int argc, char* argv[]) {
         results->y_1 = fcu_array[0]->outputs->y_1 + fcu_array[1]->outputs->y_1 + fcu_array[2]->outputs->y_1;
         results->y_2 = fcu_array[0]->outputs->y_2 + fcu_array[1]->outputs->y_2 + fcu_array[2]->outputs->y_2;
         
-        //print the combined outputs
-       if (DEBUG_FCU_OUTPUTS) print_fcu_outputs(results, 0, 0, counter);
-        
         //assign to the output array
         output_feature_map[counter * kernel_size] = results->y_0;
         output_feature_map[counter * kernel_size + 1] = results->y_1;
         output_feature_map[counter * kernel_size + 2] = results->y_2;
-
+        
+        if (DEBUG_FCU_SLIDING_INPUTS) {
+            //reference video fo sliding input
+            // https://drive.google.com/file/d/1BfqaNsNFzfJCiA2G2J2jl0laz8MwEwg_/view?usp=sharing
+            
+            check_fcu_inputs_to_img_pixels(image_pixels);
+            //sleep for the specified duration
+        }
+        
+        //print the combined outputs
+        if (DEBUG_FCU_OUTPUTS) print_fcu_outputs(results, 0, 0, counter);
+        
         
 
         counter = counter + 1;
@@ -156,6 +179,8 @@ int main(int argc, char* argv[]) {
             print_current_input_set();
         }
 
+        usleep(sleep_duration);
+
     } while(slide_inputs(fcu_array[0]) &&
             slide_inputs(fcu_array[1]) &&
             slide_inputs(fcu_array[2]));
@@ -168,17 +193,69 @@ int main(int argc, char* argv[]) {
             printf("Row %d:\t", i+1 % feature_map_size);
 
             for (int j = i * feature_map_size; j < (i + 1) * feature_map_size; j++) {
-                printf("%.2f\t", output_feature_map[j]);
+                printf("%.2f\t\t", output_feature_map[j]);
             }
 
             printf("\n");
-
-
         }
         
     }
 
+    generate_feature_map("output.txt", feature_map_size);
+
     printSimulatorEndMessage();
+}
+
+
+//for each FCU, go through its inputs and see if the address values for the double pointers match any addresses within the image array
+void check_fcu_inputs_to_img_pixels(double* pixels) {
+
+    if (pixels == NULL) {
+        printf("Pixels are NULL\n");
+        return;
+    }
+
+
+    printf("\n\nImage Pixels\n");
+    for(int i = 0; i < image_size; i++) {
+        printf("Row %d:\t", i+1 % image_size);
+
+        for (int j = i * image_size; j < (i + 1) * image_size; j++) {
+            if (fcu_array[0]->inputs->x_0 == &pixels[j] ||
+                fcu_array[0]->inputs->x_1 == &pixels[j] ||
+                fcu_array[0]->inputs->x_2 == &pixels[j]) {
+                printf("X\t");
+            } else if (fcu_array[1]->inputs->x_0 == &pixels[j] ||
+                       fcu_array[1]->inputs->x_1 == &pixels[j] ||
+                       fcu_array[1]->inputs->x_2 == &pixels[j]) {
+                printf("Y\t");
+            } else if (fcu_array[2]->inputs->x_0 == &pixels[j] ||
+                       fcu_array[2]->inputs->x_1 == &pixels[j] ||
+                       fcu_array[2]->inputs->x_2 == &pixels[j]) {
+                printf("Z\t");
+            } else {
+                printf("%.2f\t", image_pixels[j]);
+            }
+
+        }
+        printf("\n");
+    }
+}
+
+void generate_feature_map(char* filename, int size) {
+    FILE* file = fopen(filename, "w");
+    if (file == NULL) {
+        fprintf(stderr, "Could not create output file\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < size * size; i++) {
+        if (i % size == 0) {
+            fprintf(file, "\n");
+        }
+        fprintf(file, "%.2f\t",output_feature_map[i]);
+    }
+
 }
 
 /**
@@ -329,18 +406,23 @@ fcu_coefficients_s* init_fcu_coefficients(fcu_coefficients_s* h) {
         exit(EXIT_FAILURE);
     }
 
-    (h)->h_0 = (double)rand();
-    while ((h)->h_0 > 1.0) {
-        (h)->h_0 /= 10.0;
-    }
-    (h)->h_1 = (double)rand();
-    while ((h)->h_1 > 1.0) {
-        (h)->h_1 /= 10.0;
-    }
-    (h)->h_2 = (double)rand();
-    while ((h)->h_2 > 1.0) {
-        (h)->h_2 /= 10.0;
-    }
+    //Vertical Edge Detection Kernel
+    (h)->h_0 = 1.0;
+    (h)->h_1 = 0.0;
+    (h)->h_2 = -1.0;
+
+    // (h)->h_0 = (double)rand();
+    // while ((h)->h_0 > 1.0) {
+    //     (h)->h_0 /= 10.0;
+    // }
+    // (h)->h_1 = (double)rand();
+    // while ((h)->h_1 > 1.0) {
+    //     (h)->h_1 /= 10.0;
+    // }
+    // (h)->h_2 = (double)rand();
+    // while ((h)->h_2 > 1.0) {
+    //     (h)->h_2 /= 10.0;
+    // }
     
 
     (h)->h_01 = (h)->h_0+(h)->h_1;
@@ -374,52 +456,104 @@ void print_image_pixels(double* pixels, int size) {
  * Function that will initialize the testing pixel data with random values
  * 
  * @param size the width of the image in pixels.
+ * @param mode For random pixel generation or file input
  * 
  * Stored as an array that is size^2 long
  */
-int init_pixel_inputs(int size) {
+int init_pixel_inputs(int size, int mode, char* filename) {
+    printf("Mode is %d\n", mode);
+    if (mode == 1) {
+        //first determine an overall image size that is a multiple of the stride value
+        int new_size = size;
+        while (new_size % STRIDE != 0) {
+            new_size = new_size + 1;
+        }
 
-    //first determine an overall image size that is a multiple of the stride value
-    int new_size = size;
-    while (new_size % STRIDE != 0) {
-        new_size = new_size + 1;
-    }
+        //keep track of how many zeros we need to pad for right align and bottom rown
+        int padding_depth = new_size - size;
 
-    //keep track of how many zeros we need to pad for right align and bottom rown
-    int padding_depth = new_size - size;
+        // double* pixels = (double*)malloc(new_size * new_size * sizeof(double));
+        image_pixels = (double*)malloc(new_size * new_size * sizeof(double));
+        double* pixels = image_pixels;
 
-    // double* pixels = (double*)malloc(new_size * new_size * sizeof(double));
-    image_pixels = (double*)malloc(new_size * new_size * sizeof(double));
-    double* pixels = image_pixels;
+        if (pixels == NULL) {
+            fprintf(stderr, "Memory allocation failed for pixel inputs\n");
+            exit(EXIT_FAILURE);
+        }
 
-    if (pixels == NULL) {
-        fprintf(stderr, "Memory allocation failed for pixel inputs\n");
+        int counter = 0;
+
+        //mod by 255 since pixels are 8-bit values
+        for (int i = 0; i < new_size * new_size; i++) {
+            //mem array is at the right edge of the original sizing
+            if (counter == size) {
+                //add zeros for padding_depth length
+                int x;
+                for (x = i; x < i + padding_depth; x++) {
+                    pixels[x] = 0.0;
+                }
+                //update i to be the correct position in the overall image's memory
+                i = x;
+                counter = 0;
+            }
+            double tmp = (double)(rand() % 255);
+            pixels[i] = tmp == 0 ? (double)(rand() % 255) : tmp;
+            counter = counter + 1;
+        }
+
+        return new_size;
+    } else if (mode == 0) {
+        //open file ptr in read mode
+        FILE* file = fopen(filename, "r");
+
+        if (file == NULL) {
+            fprintf(stderr, "Could not open input file\n");
+            exit(EXIT_FAILURE);
+        }
+
+        int new_size = size;
+        while (new_size % STRIDE != 0) {
+            new_size = new_size + 1;
+        }
+
+        //keep track of how many zeros we need to pad for right align and bottom rown
+        int padding_depth = new_size - size;
+
+
+        image_pixels = (double*)malloc(new_size * new_size * sizeof(double));
+
+        if (image_pixels == NULL) {
+            fprintf(stderr, "Memory allocation failed for pixel inputs\n");
+            exit(EXIT_FAILURE);
+        }
+        int counter = 0;
+        for (int i = 0; i < new_size * new_size; i++) {
+            
+            if (counter == size) {
+                //add zeros for padding_depth length
+                int x;
+                for (x = i; x < i + padding_depth; x++) {
+                    image_pixels[x] = 0.0;
+                }
+                i = x;
+                counter = 0;
+            }
+            
+            fscanf(file, "%lf", &image_pixels[i]);
+            
+            counter = counter+1;
+        }
+        
+        fclose(file);
+        return new_size;
+    } else {
+        fprintf(stderr, "Invalid mode for pixel input initialization\n");
         exit(EXIT_FAILURE);
     }
 
-    int counter = 0;
-
-    //mod by 255 since pixels are 8-bit values
-    for (int i = 0; i < new_size * new_size; i++) {
-        //mem array is at the right edge of the original sizing
-        if (counter == size) {
-            //add zeros for padding_depth length
-            int x;
-            for (x = i; x < i + padding_depth; x++) {
-                pixels[x] = 0.0;
-            }
-            //update i to be the correct position in the overall image's memory
-            i = x;
-            counter = 0;
-        }
-        double tmp = (double)(rand() % 255);
-        pixels[i] = tmp == 0 ? (double)(rand() % 255) : tmp;
-        counter = counter + 1;
-    }
-
-    return new_size;
-
 }
+
+
 
 /**
  * Function that will parse the overall pixel data and output three new values to the fcu_inputs_s struct
@@ -484,21 +618,21 @@ void print_shift_reg(queue_s* queue) {
 
 void printSimulatorStartMessage() {
     printf("\n");
-    printf("  ##########################################\n");
-    printf("  #                                        #\n");
-    printf("  #                                        #\n");
-    printf("  #        Launching CNN Simulator         #\n");
-    printf("  #                                        #\n");
-    printf("  #                                        #\n");
-    printf("  ##########################################\n");
+    printf("##########################################\n");
+    printf("#                                        #\n");
+    printf("#                                        #\n");
+    printf("#        Launching CNN Simulator         #\n");
+    printf("#                                        #\n");
+    printf("#                                        #\n");
+    printf("##########################################\n");
     printf("\n");
 }
 
 void printSimulatorEndMessage() {
     printf("\n");
-    printf("  ##########################################\n");
-    printf("  #          Ending CNN Simulator          #\n");
-    printf("  ##########################################\n");
+    printf("##########################################\n");
+    printf("#          Ending CNN Simulator          #\n");
+    printf("##########################################\n");
     printf("\n");
 }
 

@@ -167,13 +167,16 @@ int main(int argc, char* argv[]) {
         results->y_2 = fcu_array[0]->outputs->y_2 + fcu_array[1]->outputs->y_2 + fcu_array[2]->outputs->y_2;
         
         //assign to the output array
+
+        
+
         output_feature_map[counter] += results->y_0;
         output_feature_map[counter + 1] += results->y_1;
         output_feature_map[counter + 2] += results->y_2;
 
+        
+
         if (DEBUG_FCU_SLIDING_INPUTS) {
-            //reference video fo sliding input
-            // https://drive.google.com/file/d/1BfqaNsNFzfJCiA2G2J2jl0laz8MwEwg_/view?usp=sharing
             
             check_fcu_inputs_to_img_pixels(image_pixels);
             printf("Feature Map IDX: %d (Y0), %d (Y1), %d (Y2)\n", counter, counter +1, counter +2);
@@ -182,8 +185,12 @@ int main(int argc, char* argv[]) {
         
         
         
-
-        counter = counter + 1;
+        //if the counter hits the end of a row
+        if (counter != 0 && (counter + 3) % (image_size) == 0) {
+            counter += 3;
+        } else {
+            counter = counter + 1;
+        }
         //print the current inputs
         if (DEBUG_INPUT_ASSIGNEMNT) {
             printf("\nInput assignments to FCUs\n");

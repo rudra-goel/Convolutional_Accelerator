@@ -21,7 +21,7 @@
 ## Usage:
 1. Compile the simulator:
 ```bash
-gcc -o *sim sim*.c fcu.c -lm
+gcc -g *.c -o sim
 ```
 
 2. Generate input shapes:

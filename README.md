@@ -1,4 +1,4 @@
-<h3 align="center">C Simulator for an FPGA Based Convolutional Neural Network</h3>
+<h3 align="center">C Simulator for an Hardware Accelerator of Convolutional Neural Networks (CNNs)</h3>
 
 <div align="center">
 
@@ -9,9 +9,39 @@
 
 ---
 
-<p align="left"> Simulator for a convolutional neural network. The architecture was defined by Wang et. al in "Hardware Architectures for Deep Convolutional Neural Network" published in an IEEE conference: _Transactions on Circuits and Systems 1_. I take their approach to computing the convolution layer via the Fast Convolutional Units (FCUs) and (hope) to create an 8 staged pipeline for this nural net. 
-Target is any Xilinx FPGA Board.
+<p align="left"> The convolution layer architecture was defined by Wang et. al in "Hardware Architectures for Deep Convolutional Neural Network".
     <br> 
 </p>
 
+## Implements:
+- Parallel FIR filtering 
+- Max Pooling Layer
+- Command Line Stride Visualization 
 
+## Usage:
+1. Compile the simulator:
+```bash
+gcc -g *.c -o sim
+```
+
+2. Generate input shapes:
+```bash
+python generate_shapes.py [image_width] [square_length] [circle_radius]
+```
+
+3. Run the simulator:
+```bash
+# Fast mode
+./sim 100 -f
+
+# Medium mode  
+./sim 100 -m
+
+# Slow mode (default)
+./sim 100 -s
+
+# Manual step-through mode
+./sim 100 --step
+``` 
+## Vertical Edge Detection Example
+https://drive.google.com/file/d/1Yx-8amAuLGYSD3KCUU9ZN4mJe844WbZr/view?usp=sharing 

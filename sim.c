@@ -37,6 +37,13 @@ double* image_pixels;
  * Output size = ((W - F + 2P) / S) + 1
  */
 double* output_feature_map;
+
+/**
+ * Used for combining outputs of the FCU to generate the feature map
+ * Position of kernel[0][0] when overlayed onto the image
+ */
+int feature_map_idx = 0;
+
 kernel_s* kernel;
 int image_size;
 int kernel_size;
@@ -44,27 +51,37 @@ int kernel_size;
 //create an array of pointers to three parallel FCUs
 fcu_s* fcu_array[3];
 
+// Global variable to control step-through mode
+int DEBUG_STEP_THRU_MODE = 0;
+
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <image_size> [-f|-m|-s]\n", argv[0]);
-        fprintf(stderr, "  -f: fast (0.025 seconds)\n");
-        fprintf(stderr, "  -m: medium (0.25 seconds)\n");
-        fprintf(stderr, "  -s: slow (0.5 seconds, default)\n");
+        fprintf(stderr, "Usage: %s <image_size> [speed_option]\n", argv[0]);
+        fprintf(stderr, "Speed options:\n");
+        fprintf(stderr, "  -f: fast (0.0125 seconds)\n");
+        fprintf(stderr, "  -m: medium (0.125 seconds)\n");
+        fprintf(stderr, "  -s: slow (0.25 seconds, default)\n");
+        fprintf(stderr, "  --step: manual step-through mode\n");
         return EXIT_FAILURE;
     }
 
-    // Parse sleep duration flag
-    int sleep_duration = 25000; // Default to -s (0.025 seconds = 25000 microseconds)
+    // Parse sleep duration flag and step mode
+    int sleep_duration = 12500; // Default to -s (0.0125 seconds = 12500 microseconds)
+    DEBUG_STEP_THRU_MODE = 0;   // Default to automatic mode
+    
     if (argc >= 3) {
         if (strcmp(argv[2], "-f") == 0) {
-            sleep_duration = 25000;  // 0.025 seconds
+            sleep_duration = 20000;  // 0.015 seconds (2x faster)
         } else if (strcmp(argv[2], "-m") == 0) {
-            sleep_duration = 250000; // 0.25 seconds
+            sleep_duration = 125000; // 0.125 seconds (2x faster)
         } else if (strcmp(argv[2], "-s") == 0) {
-            sleep_duration = 500000; // 0.5 seconds
+            sleep_duration = 250000; // 0.25 seconds (2x faster)
+        } else if (strcmp(argv[2], "--step") == 0) {
+            DEBUG_STEP_THRU_MODE = 1; // Enable step-through mode
+            sleep_duration = 0;       // No automatic sleep in step mode
         } else {
-            fprintf(stderr, "Invalid speed flag. Use -f, -m, or -s\n");
+            fprintf(stderr, "Invalid option. Use -f, -m, -s, or --step\n");
             return EXIT_FAILURE;
         }
     }
@@ -85,7 +102,9 @@ int main(int argc, char* argv[]) {
 
     //malloc size of the feature map
     int feature_map_size = ((input_image_size - kernel_size + 2 * padding) / kernel_size) + 1;
-    output_feature_map = (double*)malloc(feature_map_size * feature_map_size * sizeof(double));
+
+
+    output_feature_map = (double*)malloc(image_size * image_size / 3 * sizeof(double));
 
     if (DEBUG_IMAGE_PIXELS) print_image_pixels(image_pixels, image_size);
 
@@ -129,7 +148,14 @@ int main(int argc, char* argv[]) {
 
     //slide the inputs over by the stride amount
     do {
-        
+        if (DEBUG_STEP_THRU_MODE) {
+            // Manual step-through mode - wait for user input
+            printf("Press Enter to continue...");
+            getchar();
+        } else {
+            // Automatic mode - sleep for the specified duration
+            usleep(sleep_duration);
+        }
         //call the FCU pipeline 
         fcu_array[0]->outputs = three_parallel_fcu(fcu_array[0]->inputs, kernel->kernel_row_1, fcu_array[0]->shift_reg_1, fcu_array[0]->shift_reg_2);
         fcu_array[1]->outputs = three_parallel_fcu(fcu_array[1]->inputs, kernel->kernel_row_1, fcu_array[1]->shift_reg_1, fcu_array[1]->shift_reg_2);
@@ -141,20 +167,19 @@ int main(int argc, char* argv[]) {
         results->y_2 = fcu_array[0]->outputs->y_2 + fcu_array[1]->outputs->y_2 + fcu_array[2]->outputs->y_2;
         
         //assign to the output array
-        output_feature_map[counter * kernel_size] = results->y_0;
-        output_feature_map[counter * kernel_size + 1] = results->y_1;
-        output_feature_map[counter * kernel_size + 2] = results->y_2;
-        
+        output_feature_map[counter] += results->y_0;
+        output_feature_map[counter + 1] += results->y_1;
+        output_feature_map[counter + 2] += results->y_2;
+
         if (DEBUG_FCU_SLIDING_INPUTS) {
             //reference video fo sliding input
             // https://drive.google.com/file/d/1BfqaNsNFzfJCiA2G2J2jl0laz8MwEwg_/view?usp=sharing
             
             check_fcu_inputs_to_img_pixels(image_pixels);
-            //sleep for the specified duration
+            printf("Feature Map IDX: %d (Y0), %d (Y1), %d (Y2)\n", counter, counter +1, counter +2);
+            if (DEBUG_FCU_OUTPUTS) print_fcu_outputs(results, 0, 0, counter);
         }
         
-        //print the combined outputs
-        if (DEBUG_FCU_OUTPUTS) print_fcu_outputs(results, 0, 0, counter);
         
         
 
@@ -171,6 +196,9 @@ int main(int argc, char* argv[]) {
             printf("Input assignments to FCUs\n");
         }
 
+        //print the combined outputs
+        
+
         if (DEBUG_INPUT_SLIDING) {
 
             printf("\tPixels");
@@ -179,27 +207,25 @@ int main(int argc, char* argv[]) {
             print_current_input_set();
         }
 
-        usleep(sleep_duration);
+        if (DEBUG_FEATURE_MAP) {
+            printf("\nFeature Map Output\n");
+            int i;
+            for(i = 0; i < image_size / 3; i++) {
+
+                printf("Row %d:\t", i+1 % (image_size / 3));
+
+                for (int j = i * image_size; j < (i + 1) * image_size; j++) {
+                    printf("%.0f\t", output_feature_map[j]);
+                }
+
+                printf("\n");
+            }
+            
+        }
 
     } while(slide_inputs(fcu_array[0]) &&
             slide_inputs(fcu_array[1]) &&
             slide_inputs(fcu_array[2]));
-
-    if (DEBUG_FEATURE_MAP) {
-        printf("\nFeature Map Output\n");
-        int i;
-        for(i = 0; i < feature_map_size; i++) {
-            
-            printf("Row %d:\t", i+1 % feature_map_size);
-
-            for (int j = i * feature_map_size; j < (i + 1) * feature_map_size; j++) {
-                printf("%.2f\t\t", output_feature_map[j]);
-            }
-
-            printf("\n");
-        }
-        
-    }
 
     generate_feature_map("output.txt", feature_map_size);
 
@@ -275,20 +301,22 @@ int slide_inputs(fcu_s* fcu) {
     if (diff % (image_size) == 0) {
 
         //need to detect if we've reached the final row set for the entire image
-        if (diff + (image_size*(STRIDE-1) + 1) > image_size*image_size) {
+        if (diff + (image_size*(KERNEL_SIZE-1) + 1) > image_size*image_size) {
             return 0;
         }
 
         //if not reached end, then slide kernel as normal
-        fcu->inputs->x_0 = fcu->inputs->x_0 + STRIDE + (image_size*(STRIDE-1));
-        fcu->inputs->x_1 = fcu->inputs->x_1 + STRIDE + (image_size*(STRIDE-1));
-        fcu->inputs->x_2 = fcu->inputs->x_2 + STRIDE + (image_size*(STRIDE-1));
+        fcu->inputs->x_0 = fcu->inputs->x_0 + KERNEL_SIZE + (image_size*(KERNEL_SIZE-1));
+        fcu->inputs->x_1 = fcu->inputs->x_1 + KERNEL_SIZE + (image_size*(KERNEL_SIZE-1));
+        fcu->inputs->x_2 = fcu->inputs->x_2 + KERNEL_SIZE + (image_size*(KERNEL_SIZE-1));
 
     } else {
         // in the middle of a row so slide as normal
         fcu->inputs->x_0 = fcu->inputs->x_0 + STRIDE;
         fcu->inputs->x_1 = fcu->inputs->x_1 + STRIDE;
         fcu->inputs->x_2 = fcu->inputs->x_2 + STRIDE;
+
+        
     }
 
     return 1;

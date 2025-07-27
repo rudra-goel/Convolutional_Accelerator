@@ -43,3 +43,5 @@ python generate_shapes.py [image_width] [square_length] [circle_radius]
 # Manual step-through mode
 ./sim 100 --step
 ``` 
+## Vertical Edge Detection Example
+https://drive.google.com/file/d/1Yx-8amAuLGYSD3KCUU9ZN4mJe844WbZr/view?usp=sharing 

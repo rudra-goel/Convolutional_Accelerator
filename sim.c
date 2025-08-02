@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
             getchar();
         } else {
             // Automatic mode - sleep for the specified duration
-            usleep(sleep_duration);
+            // usleep(sleep_duration);
         }
         //call the FCU pipeline 
         fcu_array[0]->outputs = three_parallel_fcu(fcu_array[0]->inputs, kernel->kernel_row_1, fcu_array[0]->shift_reg_1, fcu_array[0]->shift_reg_2);
@@ -214,28 +214,28 @@ int main(int argc, char* argv[]) {
             print_current_input_set();
         }
 
-        if (DEBUG_FEATURE_MAP) {
-            printf("\nFeature Map Output\n");
-            int i;
-            for(i = 0; i < image_size / 3; i++) {
-
-                printf("Row %d:\t", i+1 % (image_size / 3));
-
-                for (int j = i * image_size; j < (i + 1) * image_size; j++) {
-                    printf("%.0f\t", output_feature_map[j]);
-                }
-
-                printf("\n");
-            }
-            
-        }
+        
 
     } while(slide_inputs(fcu_array[0]) &&
             slide_inputs(fcu_array[1]) &&
             slide_inputs(fcu_array[2]));
 
     generate_feature_map("output.txt", feature_map_size);
+    if (DEBUG_FEATURE_MAP) {
+        printf("\nFeature Map Output\n");
+        int i;
+        for(i = 0; i < image_size / 3; i++) {
 
+            printf("Row %d:\t", i+1 % (image_size / 3));
+
+            for (int j = i * image_size; j < (i + 1) * image_size; j++) {
+                printf("%.0f\t", output_feature_map[j]);
+            }
+
+            printf("\n");
+        }
+        
+    }
     printSimulatorEndMessage();
 }
 

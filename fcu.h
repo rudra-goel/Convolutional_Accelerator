@@ -27,7 +27,7 @@ void print_shift_reg(queue_s* queue);
 #define DEBUG_INPUT_SLIDING 0
 #define DEBUG_FEATURE_MAP 1
 #define DEBUG_FCU_OUTPUTS 1
-#define DEBUG_FCU_SLIDING_INPUTS 1
+#define DEBUG_FCU_SLIDING_INPUTS 0
 #define DEBUG_STEP_THRU 0
 #endif 
 

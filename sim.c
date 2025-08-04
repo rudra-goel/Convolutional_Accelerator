@@ -53,35 +53,80 @@ fcu_s* fcu_array[3];
 
 // Global variable to control step-through mode
 int DEBUG_STEP_THRU_MODE = 0;
+int DEBUG_FCU_SLIDING_INPUTS = 0;
 
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <image_size> [speed_option]\n", argv[0]);
-        fprintf(stderr, "Speed options:\n");
-        fprintf(stderr, "  -f: fast (0.0125 seconds)\n");
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s <image_size> <shape> [--debug speed_option]\n", argv[0]);
+        fprintf(stderr, "Shapes:\n");
+        fprintf(stderr, "  square: Use square input shape\n");
+        fprintf(stderr, "  circle: Use circle input shape\n");
+        fprintf(stderr, "  triangle: Use triangle input shape\n");
+        fprintf(stderr, "  pentagon: Use pentagon input shape\n");
+        fprintf(stderr, "  star: Use star input shape\n");
+        fprintf(stderr, "Options:\n");
+        fprintf(stderr, "  --debug: Enable sliding input visualization (requires speed option)\n");
+        fprintf(stderr, "Speed options (required with --debug):\n");
+        fprintf(stderr, "  -f: fast (0.020 seconds)\n");
         fprintf(stderr, "  -m: medium (0.125 seconds)\n");
-        fprintf(stderr, "  -s: slow (0.25 seconds, default)\n");
+        fprintf(stderr, "  -s: slow (0.250 seconds)\n");
         fprintf(stderr, "  --step: manual step-through mode\n");
         return EXIT_FAILURE;
     }
 
-    // Parse sleep duration flag and step mode
-    int sleep_duration = 12500; // Default to -s (0.0125 seconds = 12500 microseconds)
-    DEBUG_STEP_THRU_MODE = 0;   // Default to automatic mode
+    // Parse shape selection
+    char* input_filename = (char*)malloc(256 * sizeof(char));
+    if (strcmp(argv[2], "square") == 0) {
+        strcpy(input_filename, "inputs/square.txt");
+    } else if (strcmp(argv[2], "circle") == 0) {
+        strcpy(input_filename, "inputs/circle.txt");
+    } else if (strcmp(argv[2], "triangle") == 0) {
+        strcpy(input_filename, "inputs/triangle.txt");
+    } else if (strcmp(argv[2], "pentagon") == 0) {
+        strcpy(input_filename, "inputs/pentagon.txt");
+    } else if (strcmp(argv[2], "star") == 0) {
+        strcpy(input_filename, "inputs/star.txt");
+    } else {
+        fprintf(stderr, "Invalid shape. Use 'square', 'circle', 'triangle', 'pentagon', or 'star'\n");
+        free(input_filename);
+        return EXIT_FAILURE;
+    }
+
+    // Parse debug and speed options
+    int sleep_duration = 0;
+    DEBUG_STEP_THRU_MODE = 0;
+    DEBUG_FCU_SLIDING_INPUTS = 0;
     
-    if (argc >= 3) {
-        if (strcmp(argv[2], "-f") == 0) {
-            sleep_duration = 20000;  // 0.015 seconds (2x faster)
-        } else if (strcmp(argv[2], "-m") == 0) {
-            sleep_duration = 125000; // 0.125 seconds (2x faster)
-        } else if (strcmp(argv[2], "-s") == 0) {
-            sleep_duration = 250000; // 0.25 seconds (2x faster)
-        } else if (strcmp(argv[2], "--step") == 0) {
-            DEBUG_STEP_THRU_MODE = 1; // Enable step-through mode
-            sleep_duration = 0;       // No automatic sleep in step mode
+    if (argc >= 4) {
+        if (strcmp(argv[3], "--debug") == 0) {
+            DEBUG_FCU_SLIDING_INPUTS = 1;
+            
+            // When debug is enabled, speed option is required
+            if (argc < 5) {
+                fprintf(stderr, "Error: --debug requires a speed option (-f, -m, -s, or --step)\n");
+                free(input_filename);
+                return EXIT_FAILURE;
+            }
+            
+            // Parse speed option
+            if (strcmp(argv[4], "-f") == 0) {
+                sleep_duration = 5000;  // 0.005 seconds
+            } else if (strcmp(argv[4], "-m") == 0) {
+                sleep_duration = 125000; // 0.125 seconds
+            } else if (strcmp(argv[4], "-s") == 0) {
+                sleep_duration = 250000; // 0.250 seconds
+            } else if (strcmp(argv[4], "--step") == 0) {
+                DEBUG_STEP_THRU_MODE = 1;
+                sleep_duration = 0;
+            } else {
+                fprintf(stderr, "Invalid speed option. Use -f, -m, -s, or --step\n");
+                free(input_filename);
+                return EXIT_FAILURE;
+            }
         } else {
-            fprintf(stderr, "Invalid option. Use -f, -m, -s, or --step\n");
+            fprintf(stderr, "Invalid option. Use --debug followed by a speed option\n");
+            free(input_filename);
             return EXIT_FAILURE;
         }
     }
@@ -96,7 +141,10 @@ int main(int argc, char* argv[]) {
 
     // Initialize pixel inputs
     int input_image_size = atoi(argv[1]);
-    image_size = init_pixel_inputs(input_image_size, 0, "inputs/square.txt");
+    image_size = init_pixel_inputs(input_image_size, 0, input_filename);
+    
+    // Free the allocated filename string
+    free(input_filename);
     
     int padding = image_size - input_image_size;
 
@@ -152,9 +200,6 @@ int main(int argc, char* argv[]) {
             // Manual step-through mode - wait for user input
             printf("Press Enter to continue...");
             getchar();
-        } else {
-            // Automatic mode - sleep for the specified duration
-            // usleep(sleep_duration);
         }
         //call the FCU pipeline 
         fcu_array[0]->outputs = three_parallel_fcu(fcu_array[0]->inputs, kernel->kernel_row_1, fcu_array[0]->shift_reg_1, fcu_array[0]->shift_reg_2);
@@ -177,7 +222,7 @@ int main(int argc, char* argv[]) {
         
 
         if (DEBUG_FCU_SLIDING_INPUTS) {
-            
+            usleep(sleep_duration);
             check_fcu_inputs_to_img_pixels(image_pixels);
             printf("Feature Map IDX: %d (Y0), %d (Y1), %d (Y2)\n", counter, counter +1, counter +2);
             if (DEBUG_FCU_OUTPUTS) print_fcu_outputs(results, 0, 0, counter);

@@ -26,25 +26,37 @@ gcc -g *.c -o sim
 
 2. Generate input shapes:
 ```bash
-python generate_shapes.py [image_width] [square_length] [circle_radius]
+# Generate all shapes (square, circle, triangle, pentagon, star)
+python generate_shapes.py [image_size]
+
+# Generate specific shape
+python generate_shapes.py [image_size] --shape [shape_name]
+# Available shapes: square, circle, triangle, pentagon, star
 ```
 
 3. Run the simulator:
 ```bash
-# Fast mode
-./sim 100 -f
+# Basic usage with shape selection
+./sim [image_size] [shape] 
 
-# Medium mode  
-./sim 100 -m
+# With debug visualization and speed control
+./sim [image_size] [shape] --debug [speed_option]
 
-# Slow mode (default)
-./sim 100 -s
+# Examples:
+./sim 100 square              # Run with square input
+./sim 100 circle              # Run with circle input  
+./sim 100 triangle            # Run with triangle input
+./sim 100 pentagon            # Run with pentagon input
+./sim 100 star                # Run with star input
 
-# Manual step-through mode
-./sim 100 --step
+# Debug modes with different speeds:
+./sim 100 circle --debug -f   # Fast debug mode
+./sim 100 triangle --debug -m # Medium debug mode
+./sim 100 star --debug -s     # Slow debug mode
+./sim 100 pentagon --debug --step # Manual step-through mode
 ``` 
 ## Vertical Edge Detection Example
 https://drive.google.com/file/d/1Yx-8amAuLGYSD3KCUU9ZN4mJe844WbZr/view?usp=sharing 
 
 
-<img src="Circle Edge Detection.png" alt="Example" width="500"/>
+<img src="Circle.gif" alt="Example" width="500"/>
